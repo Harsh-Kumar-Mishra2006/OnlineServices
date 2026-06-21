@@ -6,7 +6,7 @@ import axios, {
 } from 'axios';
 
 // API Base URL configuration
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://onlineservices-backend.onrender.com/api';
 
 // Create axios instance with default config
 const api: AxiosInstance = axios.create({
