@@ -421,7 +421,7 @@ const CreateQuery: React.FC<CreateQueryProps> = ({ onSuccess }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Budget ($)
+                Min Budget (₹)
               </label>
               <input
                 type="number"
@@ -434,7 +434,7 @@ const CreateQuery: React.FC<CreateQueryProps> = ({ onSuccess }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Budget ($)
+                Max Budget (₹)
               </label>
               <input
                 type="number"

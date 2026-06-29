@@ -283,7 +283,7 @@ const WorkersList: React.FC = () => {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Rate:</span>
                         <span className="font-semibold text-green-600">
-                          ${worker.hourly_rate}/hr
+                          ₹{worker.hourly_rate}/hr
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">

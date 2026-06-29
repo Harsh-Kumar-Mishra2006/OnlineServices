@@ -310,7 +310,7 @@ const AddWorker: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Hourly Rate ($) *
+                        Hourly Rate (₹) *
                       </label>
                       <input
                         type="number"
