@@ -92,7 +92,9 @@ const Profile: React.FC = () => {
                     <h1 className="text-2xl font-bold text-white">
                       {user.name}
                     </h1>
-                    <p className="text-blue-100">@{user.username}</p>
+                    {user.username && (
+                      <p className="text-blue-100">@{user.username}</p>
+                    )}
                     <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-sm text-white mt-1">
                       {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
                     </span>
@@ -143,12 +145,14 @@ const Profile: React.FC = () => {
                     </div>
                     <div>
                       <label className="text-sm text-gray-500">Email</label>
-                      <p className="font-medium text-gray-900">{user.email}</p>
+                      <p className="font-medium text-gray-900">
+                        {user.email || "Not provided"}
+                      </p>
                     </div>
                     <div>
                       <label className="text-sm text-gray-500">Username</label>
                       <p className="font-medium text-gray-900">
-                        @{user.username}
+                        {user.username ? `@${user.username}` : "Not set"}
                       </p>
                     </div>
                     <div>

@@ -18,6 +18,9 @@ const AUTH_ENDPOINTS = {
   WORKERS: '/auth/workers',
   WORKER_BY_ID: (id: string) => `/auth/workers/${id}`,
   ADMIN_CREATE_WORKER: '/auth/admin/create-worker',
+  ADMIN_WORKERS: '/auth/admin/workers',
+  ADMIN_WORKER_STATUS: (id: string) => `/auth/admin/workers/${id}/status`,
+  ADMIN_WORKER_DELETE: (id: string) => `/auth/admin/workers/${id}`,
 };
 
 // Extended response type that includes user property
@@ -26,10 +29,24 @@ interface AuthApiResponse extends ApiResponse<string> {
 }
 
 class AuthService {
-  // Login user
+  // Login user - supports phone, email, or username
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await apiService.post<AuthApiResponse>(AUTH_ENDPOINTS.LOGIN, credentials);
+      // If phone is provided, use it
+      // Otherwise use email or username
+      const loginData: any = {
+        password: credentials.password
+      };
+      
+      if (credentials.phone) {
+        loginData.phone = credentials.phone;
+      } else if (credentials.email) {
+        loginData.email = credentials.email;
+      } else if (credentials.username) {
+        loginData.username = credentials.username;
+      }
+
+      const response = await apiService.post<AuthApiResponse>(AUTH_ENDPOINTS.LOGIN, loginData);
       const data = response.data;
       
       if (data) {
@@ -57,10 +74,24 @@ class AuthService {
     }
   }
 
-  // Signup new user
+  // Signup new user - email and username are optional
   async signup(data: SignupData): Promise<AuthResponse> {
     try {
-      const response = await apiService.post<AuthApiResponse>(AUTH_ENDPOINTS.SIGNUP, data);
+      const signupData: any = {
+        name: data.name,
+        phone: data.phone,
+        password: data.password,
+        role: data.role || 'user'
+      };
+      
+      // Only include email and username if they exist
+      if (data.email) signupData.email = data.email;
+      if (data.username) signupData.username = data.username;
+      if (data.age) signupData.age = data.age;
+      if (data.gender) signupData.gender = data.gender;
+      if (data.dob) signupData.dob = data.dob;
+      
+      const response = await apiService.post<AuthApiResponse>(AUTH_ENDPOINTS.SIGNUP, signupData);
       const responseData = response.data;
       
       return {
@@ -95,6 +126,10 @@ class AuthService {
     try {
       const response = await apiService.get<AuthApiResponse>(AUTH_ENDPOINTS.PROFILE);
       const data = response.data;
+      
+      if (data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
       
       return {
         success: data?.success || false,
@@ -184,46 +219,44 @@ class AuthService {
   }
 
   // ADMIN: Get all workers (including pending/inactive)
-  // Add these to your AuthService class
-
-// ADMIN: Get all workers (including pending/inactive)
-async getAllWorkersForAdmin(): Promise<any> {
-  try {
-    const response = await apiService.get('/auth/admin/workers');
-    return response.data;
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.error || 'Failed to fetch workers'
-    };
+  async getAllWorkersForAdmin(): Promise<any> {
+    try {
+      const response = await apiService.get(AUTH_ENDPOINTS.ADMIN_WORKERS);
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch workers'
+      };
+    }
   }
-}
 
-// ADMIN: Update worker status
-async updateWorkerStatus(workerId: string, status: string): Promise<any> {
-  try {
-    const response = await apiService.put(`/auth/admin/workers/${workerId}/status`, { status });
-    return response.data;
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.error || 'Failed to update worker status'
-    };
+  // ADMIN: Update worker status
+  async updateWorkerStatus(workerId: string, status: string): Promise<any> {
+    try {
+      const response = await apiService.put(AUTH_ENDPOINTS.ADMIN_WORKER_STATUS(workerId), { status });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to update worker status'
+      };
+    }
   }
-}
 
-// ADMIN: Delete worker
-async deleteWorker(workerId: string): Promise<any> {
-  try {
-    const response = await apiService.delete(`/auth/admin/workers/${workerId}`);
-    return response.data;
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.error || 'Failed to delete worker'
-    };
+  // ADMIN: Delete worker
+  async deleteWorker(workerId: string): Promise<any> {
+    try {
+      const response = await apiService.delete(AUTH_ENDPOINTS.ADMIN_WORKER_DELETE(workerId));
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to delete worker'
+      };
+    }
   }
-}
+
   // Helper methods
   getCurrentUser(): User | null {
     const userStr = localStorage.getItem('user');
@@ -254,6 +287,5 @@ async deleteWorker(workerId: string): Promise<any> {
     localStorage.setItem('user', JSON.stringify(user));
   }
 }
-
 
 export default new AuthService();

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Layout from "../layout/layout";
+import authService from "../../service/authService";
 
 type UserRole = "user" | "worker" | "admin";
 
@@ -21,20 +22,35 @@ const Login: React.FC = () => {
       label: "User",
       icon: "👤",
       color: "from-blue-500 to-blue-600",
+      placeholder: "Email or Username",
     },
     {
       id: "worker",
       label: "Worker",
       icon: "🔧",
       color: "from-green-500 to-green-600",
+      placeholder: "Phone Number",
     },
     {
       id: "admin",
       label: "Admin",
       icon: "🛡️",
       color: "from-purple-500 to-purple-600",
+      placeholder: "Email or Username",
     },
   ];
+
+  const getPlaceholder = () => {
+    const role = roles.find((r) => r.id === selectedRole);
+    return role?.placeholder || "Enter your email, username, or phone";
+  };
+
+  const getIdentifierLabel = () => {
+    if (selectedRole === "worker") {
+      return "Phone Number";
+    }
+    return "Email or Username";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,14 +58,43 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const isEmail = identifier.includes("@");
-      const result = await login(
-        isEmail ? identifier : "",
-        password,
-        isEmail ? "" : identifier,
-      );
+      let loginData: any = { password };
+
+      // For workers, use phone number
+      if (selectedRole === "worker") {
+        // Check if identifier looks like a phone number (contains digits)
+        const cleanedPhone = identifier.replace(/[^0-9]/g, "");
+        if (!/^[0-9]{10,15}$/.test(cleanedPhone)) {
+          setError("Please enter a valid phone number (10-15 digits)");
+          setLoading(false);
+          return;
+        }
+        loginData.phone = cleanedPhone;
+      } else {
+        // For users and admins, use email or username
+        const isEmail = identifier.includes("@");
+        if (isEmail) {
+          loginData.email = identifier;
+        } else {
+          loginData.username = identifier;
+        }
+      }
+
+      // Call login with the credentials object
+      const result = await login(loginData);
 
       if (result.success) {
+        // Verify role matches
+        const user = authService.getCurrentUser();
+        if (user && user.role !== selectedRole) {
+          setError(
+            `You are logged in as a ${user.role}, not a ${selectedRole}. Please select the correct role.`,
+          );
+          // Logout and clear
+          await authService.logout();
+          setLoading(false);
+          return;
+        }
         navigate("/");
       } else {
         setError(result.message || "Login failed. Please try again.");
@@ -130,16 +175,21 @@ const Login: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email or Username
+                  {getIdentifierLabel()}
                 </label>
                 <input
-                  type="text"
+                  type={selectedRole === "worker" ? "tel" : "text"}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 outline-none"
-                  placeholder="Enter your email or username"
+                  placeholder={getPlaceholder()}
                   required
                 />
+                {selectedRole === "worker" && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the phone number provided by admin
+                  </p>
+                )}
               </div>
 
               <div>
@@ -194,7 +244,7 @@ const Login: React.FC = () => {
                 {selectedRole === "user" &&
                   "👤 Access your bookings and manage your profile"}
                 {selectedRole === "worker" &&
-                  "🔧 Manage your services, availability, and earnings"}
+                  "🔧 Login with your phone number to manage services, availability, and earnings"}
                 {selectedRole === "admin" &&
                   "🛡️ Admin dashboard for managing users and services"}
               </p>

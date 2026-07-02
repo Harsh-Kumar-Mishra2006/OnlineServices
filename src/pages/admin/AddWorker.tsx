@@ -13,9 +13,9 @@ const AddWorker: React.FC = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
-    username: "",
-    phone: "",
+    email: "", // Optional now
+    username: "", // Optional now
+    phone: "", // Required - primary login
     password: "",
     confirmPassword: "",
     service_type: "",
@@ -82,12 +82,17 @@ const AddWorker: React.FC = () => {
       return;
     }
 
+    // Validate phone number
+    if (!/^[0-9]{10,15}$/.test(formData.phone.replace(/[^0-9]/g, ""))) {
+      setError("Please enter a valid phone number (10-15 digits)");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Prepare data for API
-      const workerData = {
+      // Prepare data for API - email and username are optional
+      const workerData: any = {
         name: formData.name,
-        email: formData.email,
-        username: formData.username,
         phone: formData.phone,
         password: formData.password,
         service_type: formData.service_type,
@@ -103,10 +108,16 @@ const AddWorker: React.FC = () => {
         hourly_rate: Number(formData.hourly_rate),
       };
 
+      // Only include email and username if they are provided
+      if (formData.email) workerData.email = formData.email;
+      if (formData.username) workerData.username = formData.username;
+
       const response = await authService.createWorkerByAdmin(workerData);
 
       if (response.success) {
-        setSuccess(`Worker "${formData.name}" created successfully!`);
+        setSuccess(
+          `Worker "${formData.name}" created successfully! Phone: ${formData.phone}`,
+        );
         // Reset form
         setFormData({
           name: "",
@@ -151,7 +162,7 @@ const AddWorker: React.FC = () => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Add New Worker</h1>
             <p className="text-gray-600 mt-2">
-              Create a new worker account with login credentials
+              Create a new worker account with phone number login
             </p>
           </div>
 
@@ -182,37 +193,7 @@ const AddWorker: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                        placeholder="john@example.com"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Username *
-                      </label>
-                      <input
-                        type="text"
-                        name="username"
-                        value={formData.username}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                        placeholder="johndoe123"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number *
+                        Phone Number * (Primary Login)
                       </label>
                       <input
                         type="tel"
@@ -222,6 +203,37 @@ const AddWorker: React.FC = () => {
                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                         placeholder="9876543210"
                         required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Worker will use this phone number to login
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Username (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        placeholder="johndoe123"
                       />
                     </div>
                   </div>

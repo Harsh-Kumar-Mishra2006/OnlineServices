@@ -5,21 +5,20 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
-import { type User } from "../types";
+import { type User, type LoginCredentials } from "../types";
 import authService from "../service/authService";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (
-    email: string,
-    password: string,
-    username?: string,
-  ) => Promise<{ success: boolean; message?: string }>;
+    credentials: LoginCredentials,
+  ) => Promise<{ success: boolean; message?: string; user?: User }>;
   signup: (data: any) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,11 +58,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string, username?: string) => {
+  const login = async (credentials: LoginCredentials) => {
     try {
-      const credentials = username
-        ? { username, password }
-        : { email, password };
       const response = await authService.login(credentials);
 
       if (response.success && response.user) {
@@ -71,12 +67,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return {
           success: true,
           message: response.message || "Login successful",
+          user: response.user,
         };
       } else {
-        return { success: false, message: response.error || "Login failed" };
+        return {
+          success: false,
+          message: response.error || "Login failed",
+        };
       }
     } catch (error: any) {
-      return { success: false, message: error.message || "Login failed" };
+      return {
+        success: false,
+        message: error.message || "Login failed",
+      };
     }
   };
 
@@ -90,10 +93,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           message: response.message || "Signup successful! Please login.",
         };
       } else {
-        return { success: false, message: response.error || "Signup failed" };
+        return {
+          success: false,
+          message: response.error || "Signup failed",
+        };
       }
     } catch (error: any) {
-      return { success: false, message: error.message || "Signup failed" };
+      return {
+        success: false,
+        message: error.message || "Signup failed",
+      };
     }
   };
 
@@ -115,6 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     updateUser,
     isAuthenticated: !!user,
+    isAdmin: user?.role === "admin",
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

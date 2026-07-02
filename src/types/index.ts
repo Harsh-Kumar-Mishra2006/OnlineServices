@@ -1,8 +1,8 @@
 export interface User {
   id: string;
   name: string;
-  email: string;
-  username: string;
+  email: string | null;
+  username: string | null;
   phone: string;
   role: 'user' | 'worker' | 'admin';
   profile: {
@@ -29,14 +29,15 @@ export interface AuthResponse {
 export interface LoginCredentials {
   email?: string;
   username?: string;
+  phone?: string;
   password: string;
 }
 
 export interface SignupData {
   name: string;
-  email: string;
-  username: string;
-  phone: string;
+  email?: string; // Made optional
+  username?: string; // Made optional
+  phone: string; // Required
   password: string;
   role?: 'user' | 'worker' | 'admin';
   age?: string;
@@ -46,11 +47,11 @@ export interface SignupData {
 
 export interface Worker {
   id?: string;
-   _id?: string; // Add _id as optional
+  _id?: string;
   name: string;
-  email: string;
+  email: string | null; // Made optional
   service_type: string;
-  phone_number: string;
+  phone_number: string; // Primary identifier
   address: {
     street: string;
     city: string;
@@ -83,9 +84,9 @@ export interface Worker {
 
 export interface CreateWorkerData {
   name: string;
-  email: string;
-  username: string;
-  phone: string;
+  email?: string; // Made optional
+  username?: string; // Made optional
+  phone: string; // Required
   password: string;
   service_type: string;
   address: {
