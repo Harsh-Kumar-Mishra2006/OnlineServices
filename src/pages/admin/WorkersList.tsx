@@ -44,14 +44,22 @@ const WorkersList: React.FC = () => {
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (worker) =>
-          worker.name.toLowerCase().includes(term) ||
-          worker.email.toLowerCase().includes(term) ||
-          worker.service_type.toLowerCase().includes(term) ||
-          worker.address?.city?.toLowerCase().includes(term) ||
-          worker.address?.state?.toLowerCase().includes(term),
-      );
+      filtered = filtered.filter((worker) => {
+        // Handle null/undefined values safely
+        const name = worker.name?.toLowerCase() || "";
+        const email = worker.email?.toLowerCase() || "";
+        const serviceType = worker.service_type?.toLowerCase() || "";
+        const city = worker.address?.city?.toLowerCase() || "";
+        const state = worker.address?.state?.toLowerCase() || "";
+
+        return (
+          name.includes(term) ||
+          email.includes(term) ||
+          serviceType.includes(term) ||
+          city.includes(term) ||
+          state.includes(term)
+        );
+      });
     }
 
     if (filterStatus !== "all") {
@@ -68,6 +76,11 @@ const WorkersList: React.FC = () => {
   };
 
   const handleStatusChange = async (workerId: string, newStatus: string) => {
+    if (!workerId) {
+      alert("Error: Worker ID not found");
+      return;
+    }
+
     try {
       const response = await authService.updateWorkerStatus(
         workerId,
@@ -100,7 +113,7 @@ const WorkersList: React.FC = () => {
 
   // Helper function to get worker ID (handles both id and _id)
   const getWorkerId = (worker: Worker): string => {
-    return worker.id || worker._id || "";
+    return (worker.id || worker._id || "").toString();
   };
 
   const serviceTypes = ["all", ...new Set(workers.map((w) => w.service_type))];
@@ -228,7 +241,7 @@ const WorkersList: React.FC = () => {
                   No workers found. Create your first worker!
                 </p>
                 <button
-                  onClick={() => navigate("/add-worker")}
+                  onClick={() => navigate("/admin/add-worker")}
                   className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Add Worker
@@ -257,7 +270,7 @@ const WorkersList: React.FC = () => {
                               {worker.name}
                             </h3>
                             <p className="text-sm text-gray-500">
-                              {worker.email}
+                              {worker.email || "No email provided"}
                             </p>
                           </div>
                         </div>
@@ -270,6 +283,12 @@ const WorkersList: React.FC = () => {
                     </div>
 
                     <div className="mt-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="font-medium">Phone:</span>
+                        <span className="text-blue-700 font-medium">
+                          {worker.phone_number || "N/A"}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Service:</span>
                         <span className="bg-blue-50 px-2 py-1 rounded text-blue-700">
@@ -289,7 +308,8 @@ const WorkersList: React.FC = () => {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Location:</span>
                         <span>
-                          {worker.address?.city}, {worker.address?.state}
+                          {worker.address?.city || "N/A"},{" "}
+                          {worker.address?.state || "N/A"}
                         </span>
                       </div>
                       {worker.skills && worker.skills.length > 0 && (
