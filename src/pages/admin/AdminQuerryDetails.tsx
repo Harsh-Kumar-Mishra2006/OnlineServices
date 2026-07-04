@@ -57,6 +57,8 @@ const AdminQueryDetails: React.FC<AdminQueryDetailsProps> = ({
     }
   };
 
+  // AdminQueryDetails.tsx - Updated handleAssign
+
   const handleAssign = async () => {
     if (!selectedWorker) {
       alert("Please select a worker");
@@ -64,21 +66,32 @@ const AdminQueryDetails: React.FC<AdminQueryDetailsProps> = ({
     }
 
     try {
+      console.log(`📤 Assigning worker ${selectedWorker} to query ${queryId}`);
+
       const response = await queryService.assignWorker(
         queryId,
         selectedWorker,
         scheduledDate,
         adminNotes,
       );
+
+      console.log(`📦 Assignment response:`, response);
+
       if (response.success) {
         setShowAssignModal(false);
-        fetchQuery();
+        await fetchQuery(); // Refresh query details
         alert("Worker assigned successfully!");
       } else {
-        alert(response.error || "Failed to assign worker");
+        // Show detailed error message
+        alert(`Failed to assign worker: ${response.error || "Unknown error"}`);
       }
     } catch (err: any) {
-      alert(err.message || "An error occurred");
+      console.error("❌ Assignment error:", err);
+      alert(
+        err.response?.data?.error ||
+          err.message ||
+          "An error occurred during assignment",
+      );
     }
   };
 

@@ -219,17 +219,26 @@ class AuthService {
   }
 
   // ADMIN: Get all workers (including pending/inactive)
-  async getAllWorkersForAdmin(): Promise<any> {
-    try {
-      const response = await apiService.get(AUTH_ENDPOINTS.ADMIN_WORKERS);
-      return response.data;
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Failed to fetch workers'
-      };
-    }
+  // ADMIN: Get all workers (including pending/inactive)
+async getAllWorkersForAdmin(params?: {
+  service_type?: string;
+  status?: string;
+  city?: string;
+  page?: number;
+  limit?: number;
+}): Promise<any> {
+  try {
+    const response = await apiService.get(AUTH_ENDPOINTS.ADMIN_WORKERS, {
+      params
+    });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to fetch workers for admin'
+    };
   }
+}
 
   // ADMIN: Update worker status
   async updateWorkerStatus(workerId: string, status: string): Promise<any> {

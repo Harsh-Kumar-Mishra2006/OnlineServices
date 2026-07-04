@@ -1,4 +1,4 @@
-import { apiService } from '../api/api';
+import { apiService} from '../api/api';
 import { 
   type CreateQueryData, 
   type UpdateQueryData, 
@@ -112,44 +112,56 @@ class QueryService {
 
   // ============= ADMIN METHODS =============
 
-// Get all queries with filters (for admin)
-async getAllQueries(params?: {
-  status?: string;
-  service_type?: string;
-  urgency?: string;
-  city?: string;
-  assigned?: string;
-  page?: number;
-  limit?: number;
-  sort_by?: string;
-  sort_order?: string;
-}): Promise<any> {
-  try {
-    const response = await apiService.get(QUERY_ENDPOINTS.ADMIN_ALL, {
-      params
-    });
-    return response.data;
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.error || 'Failed to fetch queries'
-    };
-  }
-}
-
-  // Assign worker to query (admin)
-  async assignWorker(queryId: string, workerId: string, scheduledDate?: string, adminNotes?: string): Promise<any> {
+  // Get all queries with filters (for admin)
+  async getAllQueries(params?: {
+    status?: string;
+    service_type?: string;
+    urgency?: string;
+    city?: string;
+    assigned?: string;
+    page?: number;
+    limit?: number;
+    sort_by?: string;
+    sort_order?: string;
+  }): Promise<any> {
     try {
-      const response = await apiService.post(QUERY_ENDPOINTS.ADMIN_ASSIGN(queryId), {
-        worker_id: workerId,
-        scheduled_date: scheduledDate,
-        admin_notes: adminNotes
+      const response = await apiService.get(QUERY_ENDPOINTS.ADMIN_ALL, {
+        params
       });
       return response.data;
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to assign worker'
+        error: error.response?.data?.error || 'Failed to fetch queries'
+      };
+    }
+  }
+
+  // Assign worker to query (Admin) - FIXED: Removed 'const' and added as class method
+  async assignWorker(
+    queryId: string,
+    workerId: string,
+    scheduledDate?: string,
+    adminNotes?: string
+  ): Promise<any> {
+    try {
+      console.log(`📤 Assigning worker ${workerId} to query ${queryId}`);
+      
+      const response = await apiService.post(QUERY_ENDPOINTS.ADMIN_ASSIGN(queryId), {
+        worker_id: workerId,
+        scheduled_date: scheduledDate || null,
+        admin_notes: adminNotes || ''
+      });
+      
+      console.log(`✅ Worker assigned successfully:`, response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error assigning worker:', error.response?.data || error.message);
+      
+      // Return detailed error message
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message || 'Failed to assign worker'
       };
     }
   }
@@ -195,6 +207,92 @@ async getAllQueries(params?: {
       };
     }
   }
+
+  // ============= ASSIGNMENT MANAGEMENT =============
+
+// Get all assignments with filters
+async getAllAssignments(params?: {
+  status?: string;
+  worker_id?: string;
+  service_type?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  limit?: number;
+}): Promise<any> {
+  try {
+    const response = await apiService.get('/queries/admin/assignments/all', {
+      params
+    });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to fetch assignments'
+    };
+  }
+}
+
+// Get worker's assignments
+async getWorkerAssignments(
+  workerId: string,
+  params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }
+): Promise<any> {
+  try {
+    const response = await apiService.get(
+      `/queries/admin/assignments/worker/${workerId}`,
+      { params }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to fetch worker assignments'
+    };
+  }
+}
+
+// Reassign worker
+async reassignWorker(
+  queryId: string,
+  newWorkerId: string,
+  scheduledDate?: string,
+  adminNotes?: string
+): Promise<any> {
+  try {
+    const response = await apiService.put(
+      `/queries/admin/assignments/${queryId}/reassign`,
+      {
+        worker_id: newWorkerId,
+        scheduled_date: scheduledDate || null,
+        admin_notes: adminNotes || ''
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to reassign worker'
+    };
+  }
+}
+
+// Get assignment statistics
+async getAssignmentStats(): Promise<any> {
+  try {
+    const response = await apiService.get('/queries/admin/assignments/stats');
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to fetch assignment stats'
+    };
+  }
+}
 }
 
 export default new QueryService();
