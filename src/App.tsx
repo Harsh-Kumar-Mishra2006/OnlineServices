@@ -8,10 +8,12 @@ import Profile from "./components/auth/Profile";
 import AddWorker from "./pages/admin/AddWorker";
 import AdminQueries from "./pages/admin/AdminQuerries";
 import UserQueries from "./pages/Queries/UserQuerries";
-import WorkerAssignments from "./pages/worker/WorkerAssignments";
 import AdminAssignWork from "./pages/admin/AdminAssignWork";
 import AdminAssignments from "./pages/admin/AdminAssignments";
 import AdminWorkAssignments from "./pages/admin/AdminWorkAssignments";
+import WorkerAssignmentDetail from "./components/worker/WorkerAssignmentDetail";
+import WorkerDashboard from "./components/worker/WorkerDashboard";
+import WorkerAssignments from "./components/worker/WorkerAssignments";
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -81,6 +83,12 @@ function App() {
           <Route path="/admin-querries-list" element={<AdminQueries />} />
           <Route path="/user-querry" element={<UserQueries />} />
           <Route path="/all-assignments" element={<AdminWorkAssignments />} />
+          <Route path="/worker/dashboard" element={<WorkerDashboard />} />
+          <Route path="/worker/assignments" element={<WorkerAssignments />} />
+          <Route
+            path="/worker/assignment/:id"
+            element={<WorkerAssignmentDetail />}
+          />
 
           <Route
             path="/worker/assignments"

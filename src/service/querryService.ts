@@ -233,29 +233,6 @@ async getAllAssignments(params?: {
   }
 }
 
-// Get worker's assignments
-async getWorkerAssignments(
-  workerId: string,
-  params?: {
-    status?: string;
-    page?: number;
-    limit?: number;
-  }
-): Promise<any> {
-  try {
-    const response = await apiService.get(
-      `/queries/admin/assignments/worker/${workerId}`,
-      { params }
-    );
-    return response.data;
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.error || 'Failed to fetch worker assignments'
-    };
-  }
-}
-
 // Reassign worker
 async reassignWorker(
   queryId: string,
@@ -290,6 +267,98 @@ async getAssignmentStats(): Promise<any> {
     return {
       success: false,
       error: error.response?.data?.error || 'Failed to fetch assignment stats'
+    };
+  }
+}
+
+
+// ============= WORKER ASSIGNMENT METHODS =============
+
+// Get worker's own assignments
+async getWorkerAssignments(params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_order?: string;
+}): Promise<any> {
+  try {
+    const response = await apiService.get('/worker/assignments/my-assignments', {
+      params
+    });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to fetch assignments'
+    };
+  }
+}
+
+// Get assignment details for worker
+async getWorkerAssignmentDetails(id: string): Promise<any> {
+  try {
+    const response = await apiService.get(`/worker/assignments/${id}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to fetch assignment details'
+    };
+  }
+}
+
+// Update assignment status (worker)
+async updateWorkerAssignmentStatus(
+  id: string,
+  status: string,
+  workerNotes?: string,
+  completionNotes?: string
+): Promise<any> {
+  try {
+    const response = await apiService.put(`/worker/assignments/${id}/status`, {
+      status,
+      worker_notes: workerNotes,
+      completion_notes: completionNotes
+    });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to update assignment status'
+    };
+  }
+}
+
+// Submit completion report
+async submitCompletionReport(
+  id: string,
+  data: {
+    actual_hours: number;
+    completion_notes?: string;
+    photos?: string[];
+  }
+): Promise<any> {
+  try {
+    const response = await apiService.post(`/worker/assignments/${id}/complete`, data);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to submit completion report'
+    };
+  }
+}
+
+// Get worker dashboard stats
+async getWorkerDashboardStats(): Promise<any> {
+  try {
+    const response = await apiService.get('/worker/assignments/dashboard/stats');
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Failed to fetch dashboard stats'
     };
   }
 }
