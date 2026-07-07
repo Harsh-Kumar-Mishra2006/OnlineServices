@@ -48,8 +48,10 @@ const Navbar: React.FC = () => {
     navLinks.push({ name: "Add Worker", href: "/add-worker" });
     navLinks.push({ name: "User Querries", href: "/admin-querries-list" });
     navLinks.push({ name: "All Assignments", href: "/all-assignments" });
+    navLinks.push({ name: "Bills", href: "/admin/bills" });
   } else if (isAuthenticated && user?.role === "user") {
     navLinks.push({ name: "Querry", href: "/user-querry" });
+    navLinks.push({ name: "My Bills", href: "/user/bills" });
   } else if (isAuthenticated && user?.role === "worker") {
     navLinks.push({ name: "Assignments", href: "/worker/assignments" });
     navLinks.push({ name: "Dashboard", href: "/worker/dashboard" });

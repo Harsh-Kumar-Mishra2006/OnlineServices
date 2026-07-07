@@ -97,8 +97,9 @@ function App() {
             path="/admin/bills/create/:queryId"
             element={<AdminCreateBill />}
           />
-          // User routes
+
           <Route path="/user/bills" element={<UserBills />} />
+
           <Route
             path="/worker/assignments"
             element={
