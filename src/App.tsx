@@ -14,6 +14,9 @@ import AdminWorkAssignments from "./pages/admin/AdminWorkAssignments";
 import WorkerAssignmentDetail from "./components/worker/WorkerAssignmentDetail";
 import WorkerDashboard from "./components/worker/WorkerDashboard";
 import WorkerAssignments from "./components/worker/WorkerAssignments";
+import AdminBillsList from "./pages/admin/AdminBillsList";
+import AdminCreateBill from "./pages/admin/AdminCreateBill";
+import UserBills from "./pages/user/UserBills";
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -89,7 +92,13 @@ function App() {
             path="/worker/assignment/:id"
             element={<WorkerAssignmentDetail />}
           />
-
+          <Route path="/admin/bills" element={<AdminBillsList />} />
+          <Route
+            path="/admin/bills/create/:queryId"
+            element={<AdminCreateBill />}
+          />
+          // User routes
+          <Route path="/user/bills" element={<UserBills />} />
           <Route
             path="/worker/assignments"
             element={
@@ -123,7 +132,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

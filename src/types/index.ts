@@ -308,3 +308,61 @@ export interface AssignmentResponse {
   };
   error?: string;
 }
+
+// ============= BILLING TYPES =============
+
+export interface BillItem {
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+}
+
+export interface Bill {
+  _id?: string;
+  query: string | UserQuery;
+  user: string | User;
+  worker: string | Worker;
+  bill_number: string;
+  service_type: string;
+  service_description: string;
+  items: BillItem[];
+  subtotal: number;
+  tax: number;
+  tax_rate: number;
+  discount: number;
+  discount_type: 'percentage' | 'fixed';
+  total_amount: number;
+  payment_status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  due_date: Date;
+  payment_date?: Date;
+  payment_method?: 'cash' | 'card' | 'upi' | 'bank_transfer' | 'other';
+  payment_transaction_id?: string;
+  notes?: string;
+  terms_conditions?: string;
+  created_by: string | User;
+  created_at: Date;
+  updated_at: Date;
+  is_deleted: boolean;
+}
+
+export interface CreateBillData {
+  query_id: string;
+  items: BillItem[];
+  tax_rate?: number;
+  discount?: number;
+  discount_type?: 'percentage' | 'fixed';
+  due_date?: string;
+  notes?: string;
+  terms_conditions?: string;
+}
+
+export interface UpdateBillData {
+  items?: BillItem[];
+  tax_rate?: number;
+  discount?: number;
+  discount_type?: 'percentage' | 'fixed';
+  due_date?: string;
+  notes?: string;
+  terms_conditions?: string;
+}
