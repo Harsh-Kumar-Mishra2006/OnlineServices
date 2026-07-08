@@ -14,11 +14,17 @@ import AdminWorkAssignments from "./pages/admin/AdminWorkAssignments";
 import WorkerAssignmentDetail from "./components/worker/WorkerAssignmentDetail";
 import WorkerDashboard from "./components/worker/WorkerDashboard";
 import WorkerAssignments from "./components/worker/WorkerAssignments";
+
+// Billing Imports
 import AdminBillsList from "./pages/admin/AdminBillsList";
 import AdminCreateBill from "./pages/admin/AdminCreateBill";
+import AdminBillDetail from "./pages/admin/AdminBillDetail";
 import UserBills from "./pages/user/UserBills";
+import UserBillDetail from "./pages/user/UserBillDetail";
 
-// Protected Route Component
+// ============= ROUTE PROTECTION COMPONENTS =============
+
+// Protected Route - Any authenticated user
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -29,6 +35,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   return <>{children}</>;
 };
 
+// Admin Route - Only admin users
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = localStorage.getItem("token");
   const userStr = localStorage.getItem("user");
@@ -51,6 +58,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+// Worker Route - Only worker users
 const WorkerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = localStorage.getItem("token");
   const userStr = localStorage.getItem("user");
@@ -78,36 +86,38 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Routes */}
+          {/* ============================================================ */}
+          {/* PUBLIC ROUTES - Accessible by everyone */}
+          {/* ============================================================ */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/add-worker" element={<AddWorker />} />
-          <Route path="/admin-querries-list" element={<AdminQueries />} />
-          <Route path="/user-querry" element={<UserQueries />} />
-          <Route path="/all-assignments" element={<AdminWorkAssignments />} />
-          <Route path="/worker/dashboard" element={<WorkerDashboard />} />
-          <Route path="/worker/assignments" element={<WorkerAssignments />} />
-          <Route
-            path="/worker/assignment/:id"
-            element={<WorkerAssignmentDetail />}
-          />
-          <Route path="/admin/bills" element={<AdminBillsList />} />
-          <Route
-            path="/admin/bills/create/:queryId"
-            element={<AdminCreateBill />}
-          />
 
-          <Route path="/user/bills" element={<UserBills />} />
+          {/* ============================================================ */}
+          {/* ADMIN ROUTES - Only accessible by admin users */}
+          {/* ============================================================ */}
 
+          {/* Worker Management */}
           <Route
-            path="/worker/assignments"
+            path="/add-worker"
             element={
-              <WorkerRoute>
-                <WorkerAssignments />
-              </WorkerRoute>
+              <AdminRoute>
+                <AddWorker />
+              </AdminRoute>
             }
           />
+
+          {/* Query Management */}
+          <Route
+            path="/admin-querries-list"
+            element={
+              <AdminRoute>
+                <AdminQueries />
+              </AdminRoute>
+            }
+          />
+
+          {/* Assignment Management */}
           <Route
             path="/admin/assign-work"
             element={
@@ -124,7 +134,104 @@ function App() {
               </AdminRoute>
             }
           />
-          {/* Protected Routes */}
+          <Route
+            path="/all-assignments"
+            element={
+              <AdminRoute>
+                <AdminWorkAssignments />
+              </AdminRoute>
+            }
+          />
+
+          {/* Billing - Admin */}
+          <Route
+            path="/admin/bills"
+            element={
+              <AdminRoute>
+                <AdminBillsList />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/bills/create"
+            element={
+              <AdminRoute>
+                <AdminCreateBill />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/bills/:id"
+            element={
+              <AdminRoute>
+                <AdminBillDetail />
+              </AdminRoute>
+            }
+          />
+
+          {/* ============================================================ */}
+          {/* USER ROUTES - Only accessible by authenticated users */}
+          {/* ============================================================ */}
+
+          {/* User Query Management */}
+          <Route
+            path="/user-querry"
+            element={
+              <ProtectedRoute>
+                <UserQueries />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Billing - User */}
+          <Route
+            path="/user/bills"
+            element={
+              <ProtectedRoute>
+                <UserBills />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user/bills/:id"
+            element={
+              <ProtectedRoute>
+                <UserBillDetail />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ============================================================ */}
+          {/* WORKER ROUTES - Only accessible by worker users */}
+          {/* ============================================================ */}
+          <Route
+            path="/worker/dashboard"
+            element={
+              <WorkerRoute>
+                <WorkerDashboard />
+              </WorkerRoute>
+            }
+          />
+          <Route
+            path="/worker/assignments"
+            element={
+              <WorkerRoute>
+                <WorkerAssignments />
+              </WorkerRoute>
+            }
+          />
+          <Route
+            path="/worker/assignment/:id"
+            element={
+              <WorkerRoute>
+                <WorkerAssignmentDetail />
+              </WorkerRoute>
+            }
+          />
+
+          {/* ============================================================ */}
+          {/* PROFILE ROUTE - Accessible by all authenticated users */}
+          {/* ============================================================ */}
           <Route
             path="/profile"
             element={
@@ -133,7 +240,10 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Catch all */}
+
+          {/* ============================================================ */}
+          {/* CATCH ALL - Redirect to home if route not found */}
+          {/* ============================================================ */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

@@ -37,6 +37,7 @@ const Navbar: React.FC = () => {
     navigate("/login");
   };
 
+  // Base navigation links (visible to everyone)
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "Services", href: "/services" },
@@ -44,17 +45,26 @@ const Navbar: React.FC = () => {
     { name: "Contact", href: "/contact" },
   ];
 
+  // Add role-specific links
   if (isAuthenticated && user?.role === "admin") {
-    navLinks.push({ name: "Add Worker", href: "/add-worker" });
-    navLinks.push({ name: "User Querries", href: "/admin-querries-list" });
-    navLinks.push({ name: "All Assignments", href: "/all-assignments" });
-    navLinks.push({ name: "Bills", href: "/admin/bills" });
+    navLinks.push(
+      { name: "Add Worker", href: "/add-worker" },
+      { name: "User Queries", href: "/admin-querries-list" },
+      { name: "Assignments", href: "/admin/assignments" },
+      { name: "All Assignments", href: "/all-assignments" },
+      { name: "Bills", href: "/admin/bills" },
+      { name: "Create Bill", href: "/admin/bills/create" },
+    );
   } else if (isAuthenticated && user?.role === "user") {
-    navLinks.push({ name: "Querry", href: "/user-querry" });
-    navLinks.push({ name: "My Bills", href: "/user/bills" });
+    navLinks.push(
+      { name: "Create Query", href: "/user-querry" },
+      { name: "My Bills", href: "/user/bills" },
+    );
   } else if (isAuthenticated && user?.role === "worker") {
-    navLinks.push({ name: "Assignments", href: "/worker/assignments" });
-    navLinks.push({ name: "Dashboard", href: "/worker/dashboard" });
+    navLinks.push(
+      { name: "Dashboard", href: "/worker/dashboard" },
+      { name: "My Assignments", href: "/worker/assignments" },
+    );
   }
 
   return (
@@ -169,7 +179,7 @@ const Navbar: React.FC = () => {
                       <Link
                         to="/profile"
                         onClick={() => setIsProfileDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gradient-to-r hover:from-black hover:to-emerald-800 transition-colors duration-150"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors duration-150"
                       >
                         <svg
                           className="w-5 h-5 text-blue-600"
@@ -186,32 +196,55 @@ const Navbar: React.FC = () => {
                         </svg>
                         <span className="text-gray-700">My Profile</span>
                       </Link>
-                      <Link
-                        to="/settings"
-                        onClick={() => setIsProfileDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors duration-150"
-                      >
-                        <svg
-                          className="w-5 h-5 text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+
+                      {/* Role-specific quick links in dropdown */}
+                      {user?.role === "admin" && (
+                        <>
+                          <Link
+                            to="/admin/bills"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors duration-150"
+                          >
+                            <svg
+                              className="w-5 h-5 text-green-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                              />
+                            </svg>
+                            <span className="text-gray-700">Bills</span>
+                          </Link>
+                        </>
+                      )}
+
+                      {user?.role === "user" && (
+                        <Link
+                          to="/user/bills"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors duration-150"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        <span className="text-gray-700">Settings</span>
-                      </Link>
+                          <svg
+                            className="w-5 h-5 text-green-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                            />
+                          </svg>
+                          <span className="text-gray-700">My Bills</span>
+                        </Link>
+                      )}
                     </div>
 
                     {/* Logout Button */}
@@ -321,7 +354,7 @@ const Navbar: React.FC = () => {
               <Link
                 to="/profile"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-2xl font-semibold text-white hover:bg-gradient-to-r hover:from-blue-800 hover:to-emerald-800 transition-all duration-300 hover:scale-110 hover:text-blue-200 ${
+                className={`text-2xl font-semibold text-white transition-all duration-300 hover:scale-110 hover:text-blue-200 ${
                   isMobileMenuOpen
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 -translate-y-4"

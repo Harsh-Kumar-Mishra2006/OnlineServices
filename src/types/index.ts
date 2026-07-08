@@ -308,6 +308,7 @@ export interface AssignmentResponse {
   };
   error?: string;
 }
+// index.ts - Updated Billing Types
 
 // ============= BILLING TYPES =============
 
@@ -318,28 +319,29 @@ export interface BillItem {
   amount: number;
 }
 
+export interface CustomerAddress {
+  street?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}
+
 export interface Bill {
   _id?: string;
-  query: string | UserQuery;
-  user: string | User;
-  worker: string | Worker;
   bill_number: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  customer_address?: CustomerAddress;
   service_type: string;
   service_description: string;
+  worker_name: string;
+  worker_phone: string;
   items: BillItem[];
   subtotal: number;
-  tax: number;
-  tax_rate: number;
   discount: number;
-  discount_type: 'percentage' | 'fixed';
   total_amount: number;
-  payment_status: 'pending' | 'paid' | 'overdue' | 'cancelled';
-  due_date: Date;
-  payment_date?: Date;
-  payment_method?: 'cash' | 'card' | 'upi' | 'bank_transfer' | 'other';
-  payment_transaction_id?: string;
   notes?: string;
-  terms_conditions?: string;
   created_by: string | User;
   created_at: Date;
   updated_at: Date;
@@ -347,22 +349,29 @@ export interface Bill {
 }
 
 export interface CreateBillData {
-  query_id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  customer_address?: CustomerAddress;
+  service_type: string;
+  service_description: string;
+  worker_name: string;
+  worker_phone: string;
   items: BillItem[];
-  tax_rate?: number;
   discount?: number;
-  discount_type?: 'percentage' | 'fixed';
-  due_date?: string;
   notes?: string;
-  terms_conditions?: string;
 }
 
 export interface UpdateBillData {
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  customer_address?: CustomerAddress;
+  service_type?: string;
+  service_description?: string;
+  worker_name?: string;
+  worker_phone?: string;
   items?: BillItem[];
-  tax_rate?: number;
   discount?: number;
-  discount_type?: 'percentage' | 'fixed';
-  due_date?: string;
   notes?: string;
-  terms_conditions?: string;
 }

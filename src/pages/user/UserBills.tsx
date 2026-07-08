@@ -1,3 +1,4 @@
+// pages/user/UserBills.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { type Bill } from "../../types";
@@ -12,17 +13,14 @@ const UserBills: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [summary, setSummary] = useState({
     total_bills: 0,
-    pending: 0,
-    paid: 0,
-    overdue: 0,
+    total_amount: 0,
   });
 
-  const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchBills();
-  }, [filter, currentPage]);
+  }, [currentPage]);
 
   const fetchBills = async () => {
     setLoading(true);
@@ -31,16 +29,13 @@ const UserBills: React.FC = () => {
         page: currentPage,
         limit: 10,
       };
-      if (filter !== "all") params.status = filter;
 
       const response = await billingService.getMyBills(params);
       if (response.success) {
         setBills(response.data || []);
         setSummary({
           total_bills: response.summary?.total_bills || 0,
-          pending: response.summary?.total_pending || 0,
-          paid: response.summary?.total_paid || 0,
-          overdue: response.summary?.total_overdue || 0,
+          total_amount: response.summary?.total_amount?.[0]?.total || 0,
         });
         setTotalPages(response.pages || 1);
       } else {
@@ -51,16 +46,6 @@ const UserBills: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getPaymentStatusColor = (status: string) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      paid: "bg-green-100 text-green-800",
-      overdue: "bg-red-100 text-red-800",
-      cancelled: "bg-gray-100 text-gray-800",
-    };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const formatCurrency = (amount: number) => {
@@ -88,84 +73,34 @@ const UserBills: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Bills</h1>
-          <p className="text-gray-600 mt-1">
-            View and manage your service bills
-          </p>
+          <p className="text-gray-600 mt-1">View all your service bills</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-blue-600">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 text-center">
+            <p className="text-3xl font-bold text-blue-600">
               {summary.total_bills}
             </p>
             <p className="text-sm text-gray-500">Total Bills</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-yellow-600">
-              {summary.pending}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 text-center">
+            <p className="text-3xl font-bold text-green-600">
+              {formatCurrency(summary.total_amount)}
             </p>
-            <p className="text-sm text-gray-500">Pending</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-green-600">{summary.paid}</p>
-            <p className="text-sm text-gray-500">Paid</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-red-600">{summary.overdue}</p>
-            <p className="text-sm text-gray-500">Overdue</p>
-          </div>
-        </div>
-
-        {/* Filter */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter("pending")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === "pending"
-                  ? "bg-yellow-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Pending
-            </button>
-            <button
-              onClick={() => setFilter("paid")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === "paid"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Paid
-            </button>
-            <button
-              onClick={() => setFilter("overdue")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === "overdue"
-                  ? "bg-red-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Overdue
-            </button>
+            <p className="text-sm text-gray-500">Total Amount</p>
           </div>
         </div>
 
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mb-4">
             <p className="text-red-700">{error}</p>
+            <button
+              onClick={fetchBills}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+              Try again
+            </button>
           </div>
         )}
 
@@ -190,47 +125,47 @@ const UserBills: React.FC = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {bill.bill_number}
                       </h3>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(bill.payment_status)}`}
-                      >
-                        {bill.payment_status.toUpperCase()}
-                      </span>
                       <span className="text-sm text-gray-500">
                         {new Date(bill.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <div>
                         <p className="text-sm text-gray-500">Service</p>
                         <p className="font-medium text-gray-800">
                           {bill.service_type}
                         </p>
+                        <p className="text-sm text-gray-600 line-clamp-1">
+                          {bill.service_description}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Worker</p>
                         <p className="font-medium text-gray-800">
-                          {typeof bill.worker === "object"
-                            ? bill.worker.name
-                            : "Unknown"}
+                          {bill.worker_name}
                         </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Amount</p>
-                        <p className="text-lg font-bold text-gray-900">
-                          {formatCurrency(bill.total_amount)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Due: {new Date(bill.due_date).toLocaleDateString()}
+                        <p className="text-sm text-gray-600">
+                          {bill.worker_phone}
                         </p>
                       </div>
                     </div>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Items: {bill.items.length}
+                      </p>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => navigate(`/user/bills/${bill._id}`)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    View Details
-                  </button>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(bill.total_amount)}
+                    </p>
+                    <button
+                      onClick={() => navigate(`/user/bills/${bill._id}`)}
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      View Details
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

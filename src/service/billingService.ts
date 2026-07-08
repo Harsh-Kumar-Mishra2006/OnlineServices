@@ -1,3 +1,4 @@
+// service/billingService.ts
 import { apiService } from '../api/api';
 import { type CreateBillData, type UpdateBillData } from '../types';
 
@@ -6,7 +7,6 @@ class BillingService {
   
   // Get user's bills
   async getMyBills(params?: {
-    status?: string;
     page?: number;
     limit?: number;
   }): Promise<any> {
@@ -49,7 +49,7 @@ class BillingService {
 
   // ============= ADMIN METHODS =============
 
-  // Create bill
+  // Create bill (Manual Entry)
   async createBill(data: CreateBillData): Promise<any> {
     try {
       const response = await apiService.post('/bills/admin/create', data);
@@ -64,11 +64,6 @@ class BillingService {
 
   // Get all bills (admin)
   async getAllBills(params?: {
-    status?: string;
-    user_id?: string;
-    query_id?: string;
-    date_from?: string;
-    date_to?: string;
     page?: number;
     limit?: number;
     sort_by?: string;
@@ -120,22 +115,6 @@ class BillingService {
       return {
         success: false,
         error: error.response?.data?.error || 'Failed to delete bill'
-      };
-    }
-  }
-
-  // Mark bill as paid (admin)
-  async markBillAsPaid(id: string, paymentMethod?: string, transactionId?: string): Promise<any> {
-    try {
-      const response = await apiService.put(`/bills/admin/${id}/pay`, {
-        payment_method: paymentMethod,
-        payment_transaction_id: transactionId
-      });
-      return response.data;
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.response?.data?.error || 'Failed to mark bill as paid'
       };
     }
   }

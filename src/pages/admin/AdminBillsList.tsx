@@ -1,3 +1,4 @@
+// pages/admin/AdminBillsList.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { type Bill } from "../../types";
@@ -12,23 +13,14 @@ const AdminBillsList: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [summary, setSummary] = useState({
     total_bills: 0,
-    pending: 0,
-    paid: 0,
-    overdue: 0,
     total_amount: 0,
-  });
-
-  const [filters, setFilters] = useState({
-    status: "all",
-    date_from: "",
-    date_to: "",
   });
 
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchBills();
-  }, [filters, currentPage]);
+  }, [currentPage]);
 
   const fetchBills = async () => {
     setLoading(true);
@@ -39,18 +31,12 @@ const AdminBillsList: React.FC = () => {
         sort_by: "created_at",
         sort_order: "desc",
       };
-      if (filters.status !== "all") params.status = filters.status;
-      if (filters.date_from) params.date_from = filters.date_from;
-      if (filters.date_to) params.date_to = filters.date_to;
 
       const response = await billingService.getAllBills(params);
       if (response.success) {
         setBills(response.data || []);
         setSummary({
           total_bills: response.summary?.total_bills || 0,
-          pending: response.summary?.pending || 0,
-          paid: response.summary?.paid || 0,
-          overdue: response.summary?.overdue || 0,
           total_amount: response.summary?.total_amount?.[0]?.total || 0,
         });
         setTotalPages(response.pages || 1);
@@ -62,16 +48,6 @@ const AdminBillsList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getPaymentStatusColor = (status: string) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      paid: "bg-green-100 text-green-800",
-      overdue: "bg-red-100 text-red-800",
-      cancelled: "bg-gray-100 text-gray-800",
-    };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const formatCurrency = (amount: number) => {
@@ -104,96 +80,38 @@ const AdminBillsList: React.FC = () => {
             <p className="text-gray-600 mt-1">Manage all service bills</p>
           </div>
           <button
-            onClick={() => navigate("/admin/queries")}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            onClick={() => navigate("/admin/bills/create")}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            + Create Bill
+            <span>+</span> Create Bill
           </button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-blue-600">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 text-center">
+            <p className="text-3xl font-bold text-blue-600">
               {summary.total_bills}
             </p>
             <p className="text-sm text-gray-500">Total Bills</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-yellow-600">
-              {summary.pending}
-            </p>
-            <p className="text-sm text-gray-500">Pending</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-green-600">{summary.paid}</p>
-            <p className="text-sm text-gray-500">Paid</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-red-600">{summary.overdue}</p>
-            <p className="text-sm text-gray-500">Overdue</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-purple-600">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 text-center">
+            <p className="text-3xl font-bold text-green-600">
               {formatCurrency(summary.total_amount)}
             </p>
             <p className="text-sm text-gray-500">Total Amount</p>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Status
-              </label>
-              <select
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters({ ...filters, status: e.target.value })
-                }
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date From
-              </label>
-              <input
-                type="date"
-                value={filters.date_from}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_from: e.target.value })
-                }
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date To
-              </label>
-              <input
-                type="date"
-                value={filters.date_to}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_to: e.target.value })
-                }
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mb-4">
             <p className="text-red-700">{error}</p>
+            <button
+              onClick={fetchBills}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+              Try again
+            </button>
           </div>
         )}
 
@@ -202,7 +120,7 @@ const AdminBillsList: React.FC = () => {
           <div className="text-center py-12 bg-gray-50 rounded-xl">
             <p className="text-gray-500 text-lg">No bills found</p>
             <p className="text-gray-400 text-sm mt-1">
-              Create bills for completed service requests
+              Create your first bill by clicking the "Create Bill" button
             </p>
           </div>
         ) : (
@@ -218,11 +136,6 @@ const AdminBillsList: React.FC = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {bill.bill_number}
                       </h3>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(bill.payment_status)}`}
-                      >
-                        {bill.payment_status.toUpperCase()}
-                      </span>
                       <span className="text-sm text-gray-500">
                         {new Date(bill.created_at).toLocaleDateString()}
                       </span>
@@ -231,12 +144,13 @@ const AdminBillsList: React.FC = () => {
                       <div>
                         <p className="text-sm text-gray-500">Customer</p>
                         <p className="font-medium text-gray-800">
-                          {typeof bill.user === "object"
-                            ? bill.user.name
-                            : "Unknown"}
+                          {bill.customer_name}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {typeof bill.user === "object" ? bill.user.email : ""}
+                          {bill.customer_email}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {bill.customer_phone}
                         </p>
                       </div>
                       <div>
@@ -244,24 +158,35 @@ const AdminBillsList: React.FC = () => {
                         <p className="font-medium text-gray-800">
                           {bill.service_type}
                         </p>
+                        <p className="text-sm text-gray-600 line-clamp-1">
+                          {bill.service_description}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Amount</p>
-                        <p className="text-lg font-bold text-gray-900">
-                          {formatCurrency(bill.total_amount)}
+                        <p className="text-sm text-gray-500">Worker</p>
+                        <p className="font-medium text-gray-800">
+                          {bill.worker_name}
                         </p>
-                        <p className="text-sm text-gray-500">
-                          Due: {new Date(bill.due_date).toLocaleDateString()}
+                        <p className="text-sm text-gray-600">
+                          {bill.worker_phone}
                         </p>
                       </div>
                     </div>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Items: {bill.items.length}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(bill.total_amount)}
+                    </p>
                     <button
                       onClick={() => navigate(`/admin/bills/${bill._id}`)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                     >
-                      View
+                      View Details
                     </button>
                   </div>
                 </div>

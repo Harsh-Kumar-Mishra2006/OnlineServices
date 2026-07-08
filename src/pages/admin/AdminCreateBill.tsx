@@ -1,431 +1,537 @@
-import React, { useState, useEffect } from "react";
+// pages/admin/AdminCreateBill.tsx
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { type Bill, type UserQuery } from "../../types";
+import { type BillItem } from "../../types";
 import billingService from "../../service/billingService";
-import queryService from "../../service/querryService";
 import Layout from "../../components/layout/layout";
 
-const AdminBillsList: React.FC = () => {
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [completedQueries, setCompletedQueries] = useState<UserQuery[]>([]);
-  const [selectedQuery, setSelectedQuery] = useState("");
-  const [loadingQueries, setLoadingQueries] = useState(false);
-
-  const [summary, setSummary] = useState({
-    total_bills: 0,
-    pending: 0,
-    paid: 0,
-    overdue: 0,
-    total_amount: 0,
-  });
-
-  const [filters, setFilters] = useState({
-    status: "all",
-    date_from: "",
-    date_to: "",
-  });
-
+const AdminCreateBill: React.FC = () => {
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchBills();
-  }, [filters, currentPage]);
+  const [billData, setBillData] = useState({
+    customer_name: "",
+    customer_email: "",
+    customer_phone: "",
+    customer_address: {
+      street: "",
+      city: "",
+      state: "",
+      pincode: "",
+    },
+    service_type: "",
+    service_description: "",
+    worker_name: "",
+    worker_phone: "",
+    items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
+    discount: 0,
+    notes: "",
+  });
 
-  const fetchBills = async () => {
-    setLoading(true);
+  const addItem = () => {
+    setBillData((prev) => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        { description: "", quantity: 1, rate: 0, amount: 0 },
+      ],
+    }));
+  };
+
+  const removeItem = (index: number) => {
+    if (billData.items.length === 1) return;
+    setBillData((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateItem = (index: number, field: keyof BillItem, value: any) => {
+    setBillData((prev) => {
+      const newItems = [...prev.items];
+      newItems[index] = { ...newItems[index], [field]: value };
+      if (field === "quantity" || field === "rate") {
+        newItems[index].amount =
+          newItems[index].quantity * newItems[index].rate;
+      }
+      return { ...prev, items: newItems };
+    });
+  };
+
+  const calculateTotals = () => {
+    const subtotal = billData.items.reduce((sum, item) => sum + item.amount, 0);
+    const discount = billData.discount || 0;
+    const total = subtotal - discount;
+    return { subtotal, discount, total };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate required fields
+    if (
+      !billData.customer_name ||
+      !billData.customer_email ||
+      !billData.customer_phone
+    ) {
+      setError("Please fill in all customer details");
+      return;
+    }
+
+    if (!billData.service_type || !billData.service_description) {
+      setError("Please fill in service details");
+      return;
+    }
+
+    if (!billData.worker_name || !billData.worker_phone) {
+      setError("Please fill in worker details");
+      return;
+    }
+
+    const invalidItems = billData.items.some(
+      (item) => !item.description || item.rate <= 0,
+    );
+    if (invalidItems) {
+      setError("Please fill in all item descriptions and rates");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+
     try {
-      const params: any = {
-        page: currentPage,
-        limit: 20,
-        sort_by: "created_at",
-        sort_order: "desc",
-      };
-      if (filters.status !== "all") params.status = filters.status;
-      if (filters.date_from) params.date_from = filters.date_from;
-      if (filters.date_to) params.date_to = filters.date_to;
+      const response = await billingService.createBill({
+        customer_name: billData.customer_name,
+        customer_email: billData.customer_email,
+        customer_phone: billData.customer_phone,
+        customer_address: billData.customer_address,
+        service_type: billData.service_type,
+        service_description: billData.service_description,
+        worker_name: billData.worker_name,
+        worker_phone: billData.worker_phone,
+        items: billData.items,
+        discount: billData.discount,
+        notes: billData.notes,
+      });
 
-      const response = await billingService.getAllBills(params);
       if (response.success) {
-        setBills(response.data || []);
-        setSummary({
-          total_bills: response.summary?.total_bills || 0,
-          pending: response.summary?.pending || 0,
-          paid: response.summary?.paid || 0,
-          overdue: response.summary?.overdue || 0,
-          total_amount: response.summary?.total_amount?.[0]?.total || 0,
-        });
-        setTotalPages(response.pages || 1);
+        alert("Bill created successfully!");
+        navigate("/admin/bills");
       } else {
-        setError(response.error || "Failed to fetch bills");
+        setError(response.error || "Failed to create bill");
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const fetchCompletedQueries = async () => {
-    setLoadingQueries(true);
-    try {
-      const response = await queryService.getAllQueries({
-        status: "completed",
-        limit: 100,
-      });
-      if (response.success) {
-        // Filter out queries that already have bills
-        const billedQueryIds = bills.map((bill) =>
-          typeof bill.query === "object" ? bill.query._id : bill.query,
-        );
-        const availableQueries = response.data.filter(
-          (q: UserQuery) => !billedQueryIds.includes(q._id),
-        );
-        setCompletedQueries(availableQueries);
-      }
-    } catch (err: any) {
-      console.error("Error fetching completed queries:", err);
-    } finally {
-      setLoadingQueries(false);
-    }
-  };
-
-  const handleOpenCreateModal = () => {
-    setShowCreateModal(true);
-    fetchCompletedQueries();
-    setSelectedQuery("");
-  };
-
-  const handleCreateBill = () => {
-    if (!selectedQuery) {
-      alert("Please select a completed service request");
-      return;
-    }
-    navigate(`/admin/bills/create/${selectedQuery}`);
-  };
-
-  const getPaymentStatusColor = (status: string) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      paid: "bg-green-100 text-green-800",
-      overdue: "bg-red-100 text-red-800",
-      cancelled: "bg-gray-100 text-gray-800",
-    };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading bills...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const { subtotal, discount, total } = calculateTotals();
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Bills</h1>
-            <p className="text-gray-600 mt-1">Manage all service bills</p>
-          </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
           <button
-            onClick={handleOpenCreateModal}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
+            onClick={() => navigate(-1)}
+            className="text-blue-600 hover:text-blue-800 font-medium mb-4 inline-flex items-center"
           >
-            <span>+</span> Create Bill
+            ← Back
           </button>
+          <h1 className="text-2xl font-bold text-gray-900">Create New Bill</h1>
+          <p className="text-gray-600 mt-1">
+            Manually enter all billing details
+          </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-blue-600">
-              {summary.total_bills}
-            </p>
-            <p className="text-sm text-gray-500">Total Bills</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-yellow-600">
-              {summary.pending}
-            </p>
-            <p className="text-sm text-gray-500">Pending</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-green-600">{summary.paid}</p>
-            <p className="text-sm text-gray-500">Paid</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-red-600">{summary.overdue}</p>
-            <p className="text-sm text-gray-500">Overdue</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-purple-600">
-              {formatCurrency(summary.total_amount)}
-            </p>
-            <p className="text-sm text-gray-500">Total Amount</p>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Status
-              </label>
-              <select
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters({ ...filters, status: e.target.value })
-                }
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Customer Information */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Customer Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer Name *
+                </label>
+                <input
+                  type="text"
+                  value={billData.customer_name}
+                  onChange={(e) =>
+                    setBillData({ ...billData, customer_name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer Email *
+                </label>
+                <input
+                  type="email"
+                  value={billData.customer_email}
+                  onChange={(e) =>
+                    setBillData({ ...billData, customer_email: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="john@example.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer Phone *
+                </label>
+                <input
+                  type="text"
+                  value={billData.customer_phone}
+                  onChange={(e) =>
+                    setBillData({ ...billData, customer_phone: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="+1 234 567 890"
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date From
-              </label>
-              <input
-                type="date"
-                value={filters.date_from}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_from: e.target.value })
-                }
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Street
+                </label>
+                <input
+                  type="text"
+                  value={billData.customer_address.street}
+                  onChange={(e) =>
+                    setBillData({
+                      ...billData,
+                      customer_address: {
+                        ...billData.customer_address,
+                        street: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="123 Main St"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City
+                </label>
+                <input
+                  type="text"
+                  value={billData.customer_address.city}
+                  onChange={(e) =>
+                    setBillData({
+                      ...billData,
+                      customer_address: {
+                        ...billData.customer_address,
+                        city: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="New York"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State
+                </label>
+                <input
+                  type="text"
+                  value={billData.customer_address.state}
+                  onChange={(e) =>
+                    setBillData({
+                      ...billData,
+                      customer_address: {
+                        ...billData.customer_address,
+                        state: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="NY"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pincode
+                </label>
+                <input
+                  type="text"
+                  value={billData.customer_address.pincode}
+                  onChange={(e) =>
+                    setBillData({
+                      ...billData,
+                      customer_address: {
+                        ...billData.customer_address,
+                        pincode: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="10001"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date To
-              </label>
-              <input
-                type="date"
-                value={filters.date_to}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_to: e.target.value })
-                }
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-              />
+          </div>
+
+          {/* Service Information */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Service Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Type *
+                </label>
+                <input
+                  type="text"
+                  value={billData.service_type}
+                  onChange={(e) =>
+                    setBillData({ ...billData, service_type: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="Plumbing, Electrical, etc."
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Description *
+                </label>
+                <input
+                  type="text"
+                  value={billData.service_description}
+                  onChange={(e) =>
+                    setBillData({
+                      ...billData,
+                      service_description: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="Brief description of service"
+                  required
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mb-4">
-            <p className="text-red-700">{error}</p>
+          {/* Worker Information */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Worker Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Worker Name *
+                </label>
+                <input
+                  type="text"
+                  value={billData.worker_name}
+                  onChange={(e) =>
+                    setBillData({ ...billData, worker_name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="Jane Smith"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Worker Phone *
+                </label>
+                <input
+                  type="text"
+                  value={billData.worker_phone}
+                  onChange={(e) =>
+                    setBillData({ ...billData, worker_phone: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="+1 234 567 890"
+                  required
+                />
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* Bills List */}
-        {bills.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl">
-            <p className="text-gray-500 text-lg">No bills found</p>
-            <p className="text-gray-400 text-sm mt-1">
-              Create bills for completed service requests
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {bills.map((bill) => (
+          {/* Bill Items */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Bill Items
+            </h2>
+
+            <div className="grid grid-cols-12 gap-3 mb-2 text-sm font-medium text-gray-500">
+              <div className="col-span-6">Description</div>
+              <div className="col-span-2 text-center">Qty</div>
+              <div className="col-span-2 text-center">Rate ($)</div>
+              <div className="col-span-1 text-center">Amount</div>
+              <div className="col-span-1"></div>
+            </div>
+
+            {billData.items.map((item, index) => (
               <div
-                key={bill._id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                key={index}
+                className="grid grid-cols-12 gap-3 mb-3 items-center"
               >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {bill.bill_number}
-                      </h3>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(bill.payment_status)}`}
-                      >
-                        {bill.payment_status.toUpperCase()}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(bill.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      <div>
-                        <p className="text-sm text-gray-500">Customer</p>
-                        <p className="font-medium text-gray-800">
-                          {typeof bill.user === "object"
-                            ? bill.user.name
-                            : "Unknown"}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {typeof bill.user === "object" ? bill.user.email : ""}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Service</p>
-                        <p className="font-medium text-gray-800">
-                          {bill.service_type}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Amount</p>
-                        <p className="text-lg font-bold text-gray-900">
-                          {formatCurrency(bill.total_amount)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Due: {new Date(bill.due_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
+                <div className="col-span-6">
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) =>
+                      updateItem(index, "description", e.target.value)
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                    placeholder="Item description"
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      updateItem(
+                        index,
+                        "quantity",
+                        parseInt(e.target.value) || 0,
+                      )
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none text-center"
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={item.rate}
+                    onChange={(e) =>
+                      updateItem(index, "rate", parseFloat(e.target.value) || 0)
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none text-center"
+                    required
+                  />
+                </div>
+                <div className="col-span-1 text-center font-medium text-gray-700">
+                  ${item.amount.toFixed(2)}
+                </div>
+                <div className="col-span-1 text-center">
+                  {billData.items.length > 1 && (
                     <button
-                      onClick={() => navigate(`/admin/bills/${bill._id}`)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="text-red-500 hover:text-red-700"
                     >
-                      View
+                      ✕
                     </button>
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
-          </div>
-        )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-center gap-2">
             <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              type="button"
+              onClick={addItem}
+              className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
             >
-              Previous
-            </button>
-            <span className="px-4 py-2 text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
+              + Add Item
             </button>
           </div>
-        )}
-      </div>
 
-      {/* Create Bill Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Create New Bill
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Select a completed service request to create a bill
-            </p>
-
-            {loadingQueries ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : completedQueries.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">
-                  No completed queries available for billing
-                </p>
-                <p className="text-sm text-gray-400 mt-1">
-                  All completed queries already have bills or none are completed
-                  yet
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                {completedQueries.map((query) => (
-                  <label
-                    key={query._id}
-                    className={`block p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                      selectedQuery === query._id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-blue-300"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        name="query"
-                        value={query._id}
-                        checked={selectedQuery === query._id}
-                        onChange={(e) => setSelectedQuery(e.target.value)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">
-                          #{query._id?.slice(-6)} - {query.name}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {query.service_type_required}
-                        </p>
-                        <p className="text-sm text-gray-500 line-clamp-1">
-                          {query.issue}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {new Date(query.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
+          {/* Totals & Notes */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Discount ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={billData.discount}
+                  onChange={(e) =>
+                    setBillData({
+                      ...billData,
+                      discount: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                />
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes (Optional)
                   </label>
-                ))}
+                  <textarea
+                    value={billData.notes}
+                    onChange={(e) =>
+                      setBillData({ ...billData, notes: e.target.value })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                    placeholder="Additional notes..."
+                  />
+                </div>
               </div>
-            )}
-
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={handleCreateBill}
-                disabled={!selectedQuery}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-sky-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Create Bill
-              </button>
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setSelectedQuery("");
-                }}
-                className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
+              <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Discount:</span>
+                  <span className="font-medium text-red-600">
+                    -${discount.toFixed(2)}
+                  </span>
+                </div>
+                <div className="border-t pt-2 flex justify-between">
+                  <span className="text-lg font-semibold">Total:</span>
+                  <span className="text-xl font-bold text-green-600">
+                    ${total.toFixed(2)}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
+
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Creating Bill..." : "Create Bill"}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </Layout>
   );
 };
 
-export default AdminBillsList;
+export default AdminCreateBill;
