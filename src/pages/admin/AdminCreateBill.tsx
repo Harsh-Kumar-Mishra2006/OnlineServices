@@ -1,56 +1,67 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { type UserQuery, type BillItem } from "../../types";
-import queryService from "../../service/querryService";
+import { useNavigate } from "react-router-dom";
+import { type Bill, type UserQuery } from "../../types";
 import billingService from "../../service/billingService";
+import queryService from "../../service/querryService";
 import Layout from "../../components/layout/layout";
 
-const AdminCreateBill: React.FC = () => {
-  const { queryId } = useParams<{ queryId: string }>();
-  const navigate = useNavigate();
-  const [query, setQuery] = useState<UserQuery | null>(null);
+const AdminBillsList: React.FC = () => {
+  const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [completedQueries, setCompletedQueries] = useState<UserQuery[]>([]);
+  const [selectedQuery, setSelectedQuery] = useState("");
+  const [loadingQueries, setLoadingQueries] = useState(false);
 
-  const [billData, setBillData] = useState({
-    items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
-    tax_rate: 0,
-    discount: 0,
-    discount_type: "fixed" as "percentage" | "fixed",
-    due_date: "",
-    notes: "",
-    terms_conditions:
-      "Payment is due within 15 days. Late payments may incur additional charges.",
+  const [summary, setSummary] = useState({
+    total_bills: 0,
+    pending: 0,
+    paid: 0,
+    overdue: 0,
+    total_amount: 0,
   });
 
-  useEffect(() => {
-    if (queryId) {
-      fetchQuery();
-    }
-  }, [queryId]);
+  const [filters, setFilters] = useState({
+    status: "all",
+    date_from: "",
+    date_to: "",
+  });
 
-  const fetchQuery = async () => {
-    if (!queryId) return;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchBills();
+  }, [filters, currentPage]);
+
+  const fetchBills = async () => {
     setLoading(true);
     try {
-      const response = await queryService.getQueryById(queryId);
+      const params: any = {
+        page: currentPage,
+        limit: 20,
+        sort_by: "created_at",
+        sort_order: "desc",
+      };
+      if (filters.status !== "all") params.status = filters.status;
+      if (filters.date_from) params.date_from = filters.date_from;
+      if (filters.date_to) params.date_to = filters.date_to;
+
+      const response = await billingService.getAllBills(params);
       if (response.success) {
-        setQuery(response.data);
-        // Pre-fill item description
-        setBillData((prev) => ({
-          ...prev,
-          items: [
-            {
-              description: `Service: ${response.data.service_type_required}`,
-              quantity: 1,
-              rate: 0,
-              amount: 0,
-            },
-          ],
-        }));
+        setBills(response.data || []);
+        setSummary({
+          total_bills: response.summary?.total_bills || 0,
+          pending: response.summary?.pending || 0,
+          paid: response.summary?.paid || 0,
+          overdue: response.summary?.overdue || 0,
+          total_amount: response.summary?.total_amount?.[0]?.total || 0,
+        });
+        setTotalPages(response.pages || 1);
       } else {
-        setError(response.error || "Failed to fetch query");
+        setError(response.error || "Failed to fetch bills");
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -59,94 +70,60 @@ const AdminCreateBill: React.FC = () => {
     }
   };
 
-  const addItem = () => {
-    setBillData((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        { description: "", quantity: 1, rate: 0, amount: 0 },
-      ],
-    }));
-  };
-
-  const removeItem = (index: number) => {
-    if (billData.items.length === 1) return;
-    setBillData((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-  };
-
-  const updateItem = (index: number, field: keyof BillItem, value: any) => {
-    setBillData((prev) => {
-      const newItems = [...prev.items];
-      newItems[index] = { ...newItems[index], [field]: value };
-
-      // Recalculate amount
-      if (field === "quantity" || field === "rate") {
-        newItems[index].amount =
-          newItems[index].quantity * newItems[index].rate;
-      }
-
-      return { ...prev, items: newItems };
-    });
-  };
-
-  const calculateTotals = () => {
-    const subtotal = billData.items.reduce((sum, item) => sum + item.amount, 0);
-    const tax = (subtotal * billData.tax_rate) / 100;
-    let discount = billData.discount;
-
-    if (billData.discount_type === "percentage") {
-      discount = (subtotal * billData.discount) / 100;
-    }
-
-    const total = subtotal + tax - discount;
-    return { subtotal, tax, discount, total };
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!queryId) return;
-
-    // Validate items
-    const invalidItems = billData.items.some(
-      (item) => !item.description || item.rate <= 0,
-    );
-    if (invalidItems) {
-      setError("Please fill in all item descriptions and rates");
-      return;
-    }
-
-    setSubmitting(true);
-    setError("");
-
+  const fetchCompletedQueries = async () => {
+    setLoadingQueries(true);
     try {
-      const response = await billingService.createBill({
-        query_id: queryId,
-        items: billData.items,
-        tax_rate: billData.tax_rate,
-        discount: billData.discount,
-        discount_type: billData.discount_type,
-        due_date: billData.due_date,
-        notes: billData.notes,
-        terms_conditions: billData.terms_conditions,
+      const response = await queryService.getAllQueries({
+        status: "completed",
+        limit: 100,
       });
-
       if (response.success) {
-        alert("Bill created successfully!");
-        navigate("/admin/bills");
-      } else {
-        setError(response.error || "Failed to create bill");
+        // Filter out queries that already have bills
+        const billedQueryIds = bills.map((bill) =>
+          typeof bill.query === "object" ? bill.query._id : bill.query,
+        );
+        const availableQueries = response.data.filter(
+          (q: UserQuery) => !billedQueryIds.includes(q._id),
+        );
+        setCompletedQueries(availableQueries);
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred");
+      console.error("Error fetching completed queries:", err);
     } finally {
-      setSubmitting(false);
+      setLoadingQueries(false);
     }
   };
 
-  const { subtotal, tax, discount, total } = calculateTotals();
+  const handleOpenCreateModal = () => {
+    setShowCreateModal(true);
+    fetchCompletedQueries();
+    setSelectedQuery("");
+  };
+
+  const handleCreateBill = () => {
+    if (!selectedQuery) {
+      alert("Please select a completed service request");
+      return;
+    }
+    navigate(`/admin/bills/create/${selectedQuery}`);
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    const colors = {
+      pending: "bg-yellow-100 text-yellow-800",
+      paid: "bg-green-100 text-green-800",
+      overdue: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-100 text-gray-800",
+    };
+    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
 
   if (loading) {
     return (
@@ -154,25 +131,7 @@ const AdminCreateBill: React.FC = () => {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading query details...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error || !query) {
-    return (
-      <Layout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-            <p className="text-red-700">{error || "Query not found"}</p>
-            <button
-              onClick={() => navigate("/admin/queries")}
-              className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
-            >
-              Back to Queries
-            </button>
+            <p className="mt-4 text-gray-600">Loading bills...</p>
           </div>
         </div>
       </Layout>
@@ -181,294 +140,292 @@ const AdminCreateBill: React.FC = () => {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Bills</h1>
+            <p className="text-gray-600 mt-1">Manage all service bills</p>
+          </div>
           <button
-            onClick={() => navigate(-1)}
-            className="text-blue-600 hover:text-blue-800 font-medium mb-4 inline-flex items-center"
+            onClick={handleOpenCreateModal}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            ← Back
+            <span>+</span> Create Bill
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Create Bill</h1>
-          <p className="text-gray-600 mt-1">
-            Service Request #{query._id?.slice(-6)} -{" "}
-            {query.service_type_required}
-          </p>
         </div>
 
-        {/* Query Summary */}
-        <div className="bg-gray-50 rounded-xl p-4 mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Customer</p>
-              <p className="font-medium">{query.name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Email</p>
-              <p className="font-medium">{query.email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Phone</p>
-              <p className="font-medium">{query.phone}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Service</p>
-              <p className="font-medium">{query.service_type_required}</p>
-            </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
+            <p className="text-2xl font-bold text-blue-600">
+              {summary.total_bills}
+            </p>
+            <p className="text-sm text-gray-500">Total Bills</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
+            <p className="text-2xl font-bold text-yellow-600">
+              {summary.pending}
+            </p>
+            <p className="text-sm text-gray-500">Pending</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
+            <p className="text-2xl font-bold text-green-600">{summary.paid}</p>
+            <p className="text-sm text-gray-500">Paid</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
+            <p className="text-2xl font-bold text-red-600">{summary.overdue}</p>
+            <p className="text-sm text-gray-500">Overdue</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
+            <p className="text-2xl font-bold text-purple-600">
+              {formatCurrency(summary.total_amount)}
+            </p>
+            <p className="text-sm text-gray-500">Total Amount</p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Items */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Bill Items
-            </h2>
-
-            {billData.items.map((item, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-12 gap-3 mb-3 items-end"
-              >
-                <div className="col-span-5">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <input
-                    type="text"
-                    value={item.description}
-                    onChange={(e) =>
-                      updateItem(index, "description", e.target.value)
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    placeholder="Item description"
-                    required
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Qty
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      updateItem(
-                        index,
-                        "quantity",
-                        parseInt(e.target.value) || 0,
-                      )
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    required
-                  />
-                </div>
-                <div className="col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rate ($)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.rate}
-                    onChange={(e) =>
-                      updateItem(index, "rate", parseFloat(e.target.value) || 0)
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    required
-                  />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Amount
-                  </label>
-                  <p className="text-gray-900 font-medium py-2">
-                    ${item.amount.toFixed(2)}
-                  </p>
-                </div>
-                <div className="col-span-1">
-                  {billData.items.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      className="text-red-500 hover:text-red-700 p-2"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            <button
-              type="button"
-              onClick={addItem}
-              className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-            >
-              + Add Item
-            </button>
-          </div>
-
-          {/* Totals */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tax Rate (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={billData.tax_rate}
-                    onChange={(e) =>
-                      setBillData({
-                        ...billData,
-                        tax_rate: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount
-                  </label>
-                  <div className="flex gap-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={billData.discount}
-                      onChange={(e) =>
-                        setBillData({
-                          ...billData,
-                          discount: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    />
-                    <select
-                      value={billData.discount_type}
-                      onChange={(e) =>
-                        setBillData({
-                          ...billData,
-                          discount_type: e.target.value as
-                            | "percentage"
-                            | "fixed",
-                        })
-                      }
-                      className="px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    >
-                      <option value="fixed">Fixed ($)</option>
-                      <option value="percentage">Percentage (%)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">
-                    Tax ({billData.tax_rate}%):
-                  </span>
-                  <span className="font-medium">${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Discount:</span>
-                  <span className="font-medium text-red-600">
-                    -${discount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="border-t pt-2 flex justify-between">
-                  <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-xl font-bold text-green-600">
-                    ${total.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Details */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  value={billData.due_date}
-                  onChange={(e) =>
-                    setBillData({ ...billData, due_date: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
-                <input
-                  type="text"
-                  value={billData.notes}
-                  onChange={(e) =>
-                    setBillData({ ...billData, notes: e.target.value })
-                  }
-                  placeholder="Additional notes..."
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                />
-              </div>
-            </div>
-            <div className="mt-4">
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Terms & Conditions
+                Payment Status
               </label>
-              <textarea
-                value={billData.terms_conditions}
+              <select
+                value={filters.status}
                 onChange={(e) =>
-                  setBillData({ ...billData, terms_conditions: e.target.value })
+                  setFilters({ ...filters, status: e.target.value })
                 }
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date From
+              </label>
+              <input
+                type="date"
+                value={filters.date_from}
+                onChange={(e) =>
+                  setFilters({ ...filters, date_from: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date To
+              </label>
+              <input
+                type="date"
+                value={filters.date_to}
+                onChange={(e) =>
+                  setFilters({ ...filters, date_to: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
               />
             </div>
           </div>
+        </div>
 
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-              <p className="text-red-700">{error}</p>
-            </div>
-          )}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mb-4">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
 
-          <div className="flex gap-4">
+        {/* Bills List */}
+        {bills.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-xl">
+            <p className="text-gray-500 text-lg">No bills found</p>
+            <p className="text-gray-400 text-sm mt-1">
+              Create bills for completed service requests
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {bills.map((bill) => (
+              <div
+                key={bill._id}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {bill.bill_number}
+                      </h3>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(bill.payment_status)}`}
+                      >
+                        {bill.payment_status.toUpperCase()}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {new Date(bill.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <div>
+                        <p className="text-sm text-gray-500">Customer</p>
+                        <p className="font-medium text-gray-800">
+                          {typeof bill.user === "object"
+                            ? bill.user.name
+                            : "Unknown"}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {typeof bill.user === "object" ? bill.user.email : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Service</p>
+                        <p className="font-medium text-gray-800">
+                          {bill.service_type}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Amount</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {formatCurrency(bill.total_amount)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Due: {new Date(bill.due_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate(`/admin/bills/${bill._id}`)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
             <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? "Creating Bill..." : "Create Bill"}
+              Previous
             </button>
+            <span className="px-4 py-2 text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
             <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Cancel
+              Next
             </button>
           </div>
-        </form>
+        )}
       </div>
+
+      {/* Create Bill Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Create New Bill
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Select a completed service request to create a bill
+            </p>
+
+            {loadingQueries ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : completedQueries.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  No completed queries available for billing
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  All completed queries already have bills or none are completed
+                  yet
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {completedQueries.map((query) => (
+                  <label
+                    key={query._id}
+                    className={`block p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      selectedQuery === query._id
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-blue-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="radio"
+                        name="query"
+                        value={query._id}
+                        checked={selectedQuery === query._id}
+                        onChange={(e) => setSelectedQuery(e.target.value)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">
+                          #{query._id?.slice(-6)} - {query.name}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {query.service_type_required}
+                        </p>
+                        <p className="text-sm text-gray-500 line-clamp-1">
+                          {query.issue}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(query.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleCreateBill}
+                disabled={!selectedQuery}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-sky-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create Bill
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setSelectedQuery("");
+                }}
+                className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
 
-export default AdminCreateBill;
+export default AdminBillsList;
