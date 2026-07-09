@@ -147,7 +147,7 @@ const UserInitiatePayment: React.FC = () => {
               </h3>
               <div className="flex justify-center">
                 <img
-                  src="/path-to-your-qr-code-image.png" // Replace with your QR code image path
+                  src="/payment-qr-code.jpg" // Replace with your QR code image path
                   alt="Payment QR Code"
                   className="w-48 h-48 object-contain border rounded-lg"
                 />
