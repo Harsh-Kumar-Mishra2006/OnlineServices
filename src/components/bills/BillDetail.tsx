@@ -1,4 +1,3 @@
-// components/bills/BillDetail.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { type Bill } from "../../types";
@@ -16,6 +15,20 @@ const BillDetail: React.FC<BillDetailProps> = ({ bill, role }) => {
       style: "currency",
       currency: "INR",
     }).format(amount);
+  };
+
+  const handlePayment = () => {
+    if (role === "user") {
+      navigate(`/user/payments/initiate/${bill._id}`);
+    }
+  };
+
+  const handleViewPayment = () => {
+    if (role === "user") {
+      navigate(`/user/payments`);
+    } else {
+      navigate(`/admin/payments`);
+    }
   };
 
   return (
@@ -44,11 +57,18 @@ const BillDetail: React.FC<BillDetailProps> = ({ bill, role }) => {
               <p className="text-3xl font-bold">
                 {formatCurrency(bill.total_amount)}
               </p>
+              {bill.is_paid && (
+                <span className="text-xs bg-green-500 text-white px-3 py-1 rounded-full mt-1 inline-block">
+                  ✅ Paid
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Rest of the bill details... (same as before) */}
+
           {/* Customer & Worker Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -93,7 +113,7 @@ const BillDetail: React.FC<BillDetailProps> = ({ bill, role }) => {
             <p className="text-gray-800">{bill.service_description}</p>
           </div>
 
-          {/* Items Table */}
+          {/* Items Table - same as before */}
           <div>
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Items
@@ -184,6 +204,46 @@ const BillDetail: React.FC<BillDetailProps> = ({ bill, role }) => {
               <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
                 {bill.notes}
               </p>
+            </div>
+          )}
+
+          {/* Payment Actions */}
+          {role === "user" && !bill.is_paid && (
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={handlePayment}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl transition-all"
+                >
+                  💳 Complete Payment
+                </button>
+              </div>
+            </div>
+          )}
+
+          {role === "user" && bill.is_paid && (
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={handleViewPayment}
+                  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all"
+                >
+                  👁️ View Payment
+                </button>
+              </div>
+            </div>
+          )}
+
+          {role === "admin" && (
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={handleViewPayment}
+                  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all"
+                >
+                  👁️ View All Payments
+                </button>
+              </div>
             </div>
           )}
 
