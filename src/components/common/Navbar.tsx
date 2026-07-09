@@ -50,7 +50,6 @@ const Navbar: React.FC = () => {
     navLinks.push(
       { name: "Add Worker", href: "/add-worker" },
       { name: "User Queries", href: "/admin-querries-list" },
-      { name: "Assignments", href: "/admin/assignments" },
       { name: "All Assignments", href: "/all-assignments" },
       { name: "Bills", href: "/admin/bills" },
       { name: "Create Bill", href: "/admin/bills/create" },

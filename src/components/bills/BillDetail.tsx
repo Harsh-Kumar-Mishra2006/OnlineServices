@@ -14,7 +14,7 @@ const BillDetail: React.FC<BillDetailProps> = ({ bill, role }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(amount);
   };
 
