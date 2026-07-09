@@ -346,6 +346,8 @@ export interface Bill {
   created_at: Date;
   updated_at: Date;
   is_deleted: boolean;
+  is_paid?: boolean;
+  payment?: string | Payment;
 }
 
 export interface CreateBillData {
@@ -374,4 +376,37 @@ export interface UpdateBillData {
   items?: BillItem[];
   discount?: number;
   notes?: string;
+}
+
+// ============= PAYMENT TYPES =============
+
+export interface PaymentScreenshot {
+  public_id: string;
+  url: string;
+}
+
+export interface Payment {
+  _id?: string;
+  bill: string | Bill;
+  user: string | User;
+  payment_amount: number;
+  payment_screenshot: PaymentScreenshot;
+  status: 'pending' | 'verified' | 'rejected';
+  verified_by?: string | User;
+  verified_at?: Date;
+  verification_notes?: string;
+  user_notes?: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface InitiatePaymentData {
+  bill_id: string;
+  user_notes?: string;
+  screenshot: File;
+}
+
+export interface VerifyPaymentData {
+  status: 'verified' | 'rejected';
+  verification_notes?: string;
 }

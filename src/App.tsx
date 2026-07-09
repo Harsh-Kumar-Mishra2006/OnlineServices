@@ -21,6 +21,10 @@ import AdminCreateBill from "./pages/admin/AdminCreateBill";
 import AdminBillDetail from "./pages/admin/AdminBillDetail";
 import UserBills from "./pages/user/UserBills";
 import UserBillDetail from "./pages/user/UserBillDetail";
+import UserPayments from "./pages/user/UserPayments";
+import UserInitiatePayment from "./pages/user/UserInitiatePayment";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminPaymentDetail from "./pages/admin/AdminPaymentDetail";
 
 // ============= ROUTE PROTECTION COMPONENTS =============
 
@@ -92,11 +96,9 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-
           {/* ============================================================ */}
           {/* ADMIN ROUTES - Only accessible by admin users */}
           {/* ============================================================ */}
-
           {/* Worker Management */}
           <Route
             path="/add-worker"
@@ -106,7 +108,6 @@ function App() {
               </AdminRoute>
             }
           />
-
           {/* Query Management */}
           <Route
             path="/admin-querries-list"
@@ -116,7 +117,6 @@ function App() {
               </AdminRoute>
             }
           />
-
           {/* Assignment Management */}
           <Route
             path="/admin/assign-work"
@@ -142,7 +142,6 @@ function App() {
               </AdminRoute>
             }
           />
-
           {/* Billing - Admin */}
           <Route
             path="/admin/bills"
@@ -168,11 +167,9 @@ function App() {
               </AdminRoute>
             }
           />
-
           {/* ============================================================ */}
           {/* USER ROUTES - Only accessible by authenticated users */}
           {/* ============================================================ */}
-
           {/* User Query Management */}
           <Route
             path="/user-querry"
@@ -182,7 +179,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           {/* Billing - User */}
           <Route
             path="/user/bills"
@@ -201,6 +197,42 @@ function App() {
             }
           />
 
+          {/* ============================================================ */}
+          {/* PAYMENT ROUTES */}
+          {/* ============================================================ */}
+          <Route
+            path="/user/payments"
+            element={
+              <ProtectedRoute>
+                <UserPayments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user/payments/initiate/:billId"
+            element={
+              <ProtectedRoute>
+                <UserInitiatePayment />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/payments"
+            element={
+              <AdminRoute>
+                <AdminPayments />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/payments/:id"
+            element={
+              <AdminRoute>
+                <AdminPaymentDetail />
+              </AdminRoute>
+            }
+          />
           {/* ============================================================ */}
           {/* WORKER ROUTES - Only accessible by worker users */}
           {/* ============================================================ */}
@@ -228,7 +260,6 @@ function App() {
               </WorkerRoute>
             }
           />
-
           {/* ============================================================ */}
           {/* PROFILE ROUTE - Accessible by all authenticated users */}
           {/* ============================================================ */}
@@ -240,7 +271,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           {/* ============================================================ */}
           {/* CATCH ALL - Redirect to home if route not found */}
           {/* ============================================================ */}

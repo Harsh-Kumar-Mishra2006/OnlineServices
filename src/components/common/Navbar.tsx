@@ -40,8 +40,6 @@ const Navbar: React.FC = () => {
   // Base navigation links (visible to everyone)
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Services", href: "/services" },
-    { name: "About Us", href: "/about" },
     { name: "Contact", href: "/contact" },
   ];
 
@@ -53,11 +51,13 @@ const Navbar: React.FC = () => {
       { name: "All Assignments", href: "/all-assignments" },
       { name: "Bills", href: "/admin/bills" },
       { name: "Create Bill", href: "/admin/bills/create" },
+      { name: "Payments", href: "/admin/payments" },
     );
   } else if (isAuthenticated && user?.role === "user") {
     navLinks.push(
       { name: "Create Query", href: "/user-querry" },
       { name: "My Bills", href: "/user/bills" },
+      { name: "My Payments", href: "/user/payments" },
     );
   } else if (isAuthenticated && user?.role === "worker") {
     navLinks.push(
