@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { QUERY_STATUS, type UserQuery, type Worker } from "../../types";
+import { QUERY_STATUS, type UserQuery, type Worker } from "../../types/index";
 import queryService from "../../service/querryService";
 import Layout from "../layout/layout";
 

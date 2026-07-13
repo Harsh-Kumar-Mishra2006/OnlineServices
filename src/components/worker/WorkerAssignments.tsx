@@ -5,7 +5,7 @@ import {
   QUERY_STATUS,
   URGENCY_LEVELS,
   SERVICE_CATEGORIES,
-} from "../../types";
+} from "../../types/index";
 import queryService from "../../service/querryService";
 import Layout from "../layout/layout";
 
