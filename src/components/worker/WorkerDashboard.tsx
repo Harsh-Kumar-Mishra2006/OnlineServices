@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { QUERY_STATUS, type UserQuery, type Worker } from "../../types/index";
+import { QUERY_STATUS, type UserQuery, type Worker } from "../../types";
 import queryService from "../../service/querryService";
 import Layout from "../layout/layout";
 
@@ -40,6 +40,7 @@ const WorkerDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setError("");
     try {
       const response = await queryService.getWorkerDashboardStats();
       if (response.success) {
@@ -87,6 +88,10 @@ const WorkerDashboard: React.FC = () => {
             <p className="text-red-700">
               {error || "Failed to load dashboard"}
             </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Please make sure your worker profile is properly set up. Contact
+              admin if this issue persists.
+            </p>
             <button
               onClick={fetchDashboardData}
               className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
@@ -120,6 +125,9 @@ const WorkerDashboard: React.FC = () => {
             </span>
             <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
               Rate: ${worker.hourly_rate}/hr
+            </span>
+            <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
+              📱 {worker.phone_number}
             </span>
           </div>
         </div>
@@ -222,7 +230,7 @@ const WorkerDashboard: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        {assignment.service_type_required} •
+                        {assignment.service_type_required} •{" "}
                         {assignment.address?.city}, {assignment.address?.state}
                       </p>
                       <p className="text-sm text-gray-500 line-clamp-1">
