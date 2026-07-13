@@ -124,7 +124,7 @@ const WorkerDashboard: React.FC = () => {
               Status: {worker.status}
             </span>
             <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
-              Rate: ${worker.hourly_rate}/hr
+              Rate: ₹{worker.hourly_rate}/hr
             </span>
             <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
               📱 {worker.phone_number}
@@ -169,7 +169,7 @@ const WorkerDashboard: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
             <p className="text-sm text-gray-500">Total Earnings</p>
             <p className="text-xl font-bold text-green-600">
-              ${earnings.total.toFixed(2)}
+              ₹{earnings.total.toFixed(2)}
             </p>
             <p className="text-xs text-gray-500">
               {earnings.total_hours} hours worked

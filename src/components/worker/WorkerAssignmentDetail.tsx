@@ -236,7 +236,7 @@ const WorkerAssignmentDetail: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-500">Budget</p>
                   <p className="font-medium">
-                    ${assignment.budget.min} -{" "}
+                    ₹{assignment.budget.min} -{" "}
                     {assignment.budget.max || "Negotiable"}
                   </p>
                 </div>
