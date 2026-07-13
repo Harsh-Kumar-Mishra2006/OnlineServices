@@ -329,31 +329,6 @@ const WorkersList: React.FC = () => {
                           )}
                         </div>
                       )}
-
-                      {/* Assign Work Button - Fixed with proper ID handling */}
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        {worker.status === "active" && workerId && (
-                          <button
-                            onClick={() => {
-                              console.log(
-                                "Navigating with workerId:",
-                                workerId,
-                              );
-                              navigate(
-                                `/admin/assign-work?workerId=${workerId}&workerName=${encodeURIComponent(worker.name)}`,
-                              );
-                            }}
-                            className="w-full bg-gradient-to-r from-blue-600 to-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all hover:scale-[1.02] active:scale-95"
-                          >
-                            📋 Assign Work
-                          </button>
-                        )}
-                        {worker.status === "active" && !workerId && (
-                          <p className="text-red-500 text-xs text-center">
-                            Error: Worker ID not found
-                          </p>
-                        )}
-                      </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-gray-200">
