@@ -50,6 +50,7 @@ export interface Worker {
   _id?: string;
   name: string;
   email: string | null; // Made optional
+  username: string;
   service_type: string;
   phone_number: string; // Primary identifier
   address: {
@@ -63,7 +64,7 @@ export interface Worker {
   skills: string[];
   certifications: string[];
   bio: string;
-  hourly_rate: number;
+  hourly_rate?: number;
   availability: {
     monday: boolean;
     tuesday: boolean;
@@ -100,7 +101,7 @@ export interface CreateWorkerData {
   skills: string[];
   certifications: string[];
   bio: string;
-  hourly_rate: number;
+  
 }
 
 export const SERVICE_CATEGORIES = [

@@ -30,7 +30,7 @@ const AddWorker: React.FC = () => {
     skills: "",
     certifications: "",
     bio: "",
-    hourly_rate: 0,
+    // hourly_rate: 0, // REMOVED
   });
 
   const handleChange = (
@@ -105,7 +105,7 @@ const AddWorker: React.FC = () => {
           ? formData.certifications.split(",").map((s) => s.trim())
           : [],
         bio: formData.bio,
-        hourly_rate: Number(formData.hourly_rate),
+        // hourly_rate: Number(formData.hourly_rate), // REMOVED
       };
 
       // Only include email and username if they are provided
@@ -138,7 +138,7 @@ const AddWorker: React.FC = () => {
           skills: "",
           certifications: "",
           bio: "",
-          hourly_rate: 0,
+          // hourly_rate: 0, // REMOVED
         });
         // Optionally redirect after a delay
         setTimeout(() => {
@@ -320,22 +320,7 @@ const AddWorker: React.FC = () => {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Hourly Rate (₹) *
-                      </label>
-                      <input
-                        type="number"
-                        name="hourly_rate"
-                        value={formData.hourly_rate}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                        placeholder="25"
-                        min="0"
-                        step="0.5"
-                        required
-                      />
-                    </div>
+                    {/* HOURLY RATE FIELD REMOVED */}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

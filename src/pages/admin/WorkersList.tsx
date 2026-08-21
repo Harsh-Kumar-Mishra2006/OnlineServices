@@ -116,6 +116,20 @@ const WorkersList: React.FC = () => {
     return (worker.id || worker._id || "").toString();
   };
 
+  const getDisplayUsername = (worker: Worker): string => {
+    // If username exists and is not null/undefined/empty
+    if (
+      worker.username &&
+      worker.username !== "null" &&
+      worker.username !== "undefined" &&
+      worker.username.trim() !== ""
+    ) {
+      return worker.username;
+    }
+    // Otherwise use phone number
+    return worker.phone_number || "No username";
+  };
+
   const serviceTypes = ["all", ...new Set(workers.map((w) => w.service_type))];
 
   if (loading) {
@@ -271,6 +285,8 @@ const WorkersList: React.FC = () => {
                             </h3>
                             <p className="text-sm text-gray-500">
                               {worker.email || "No email provided"}
+                              {worker.username &&
+                                ` • @${getDisplayUsername(worker)}`}
                             </p>
                           </div>
                         </div>
@@ -298,12 +314,6 @@ const WorkersList: React.FC = () => {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Experience:</span>
                         <span>{worker.experience_years} years</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span className="font-medium">Rate:</span>
-                        <span className="font-semibold text-green-600">
-                          ₹{worker.hourly_rate}/hr
-                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Location:</span>

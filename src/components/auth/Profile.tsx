@@ -152,7 +152,11 @@ const Profile: React.FC = () => {
                     <div>
                       <label className="text-sm text-gray-500">Username</label>
                       <p className="font-medium text-gray-900">
-                        {user.username ? `@${user.username}` : "Not set"}
+                        {user.username &&
+                        user.username !== "null" &&
+                        user.username !== "undefined"
+                          ? `@${user.username}`
+                          : "Not set"}
                       </p>
                     </div>
                     <div>
