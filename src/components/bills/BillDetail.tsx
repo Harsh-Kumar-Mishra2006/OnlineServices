@@ -67,8 +67,6 @@ const BillDetail: React.FC<BillDetailProps> = ({ bill, role }) => {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Rest of the bill details... (same as before) */}
-
           {/* Customer & Worker Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -113,7 +111,79 @@ const BillDetail: React.FC<BillDetailProps> = ({ bill, role }) => {
             <p className="text-gray-800">{bill.service_description}</p>
           </div>
 
-          {/* Items Table - same as before */}
+          {/* QR Code Section */}
+          {bill.qr_code && (
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                QR Code
+              </h3>
+              <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="w-32 h-32 bg-white rounded-lg border-2 border-gray-200 overflow-hidden flex-shrink-0 p-2">
+                  <img
+                    src={bill.qr_code}
+                    alt="QR Code for bill"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="text-sm font-medium text-gray-700">
+                    Scan this QR code for bill details
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Bill Number: {bill.bill_number}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
+                    <a
+                      href={bill.qr_code}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"
+                        />
+                      </svg>
+                      Open Full Size
+                    </a>
+                    <button
+                      onClick={() => {
+                        if (bill.qr_code) {
+                          window.open(bill.qr_code, "_blank");
+                        }
+                      }}
+                      className="inline-flex items-center px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                        />
+                      </svg>
+                      Download
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Items Table */}
           <div>
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Items

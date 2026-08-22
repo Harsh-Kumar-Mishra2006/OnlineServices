@@ -381,7 +381,7 @@ export interface UpdateBillData {
   items?: BillItem[];
   discount?: number;
   notes?: string;
-  qr_code?: File | null; // Add QR code file for upload
+  qr_code?: File | null; 
 }
 
 // ============= PAYMENT TYPES =============
