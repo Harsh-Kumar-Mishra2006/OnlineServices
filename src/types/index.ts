@@ -311,6 +311,8 @@ export interface AssignmentResponse {
 }
 // index.ts - Updated Billing Types
 
+// types/index.ts - Updated Billing Types
+
 // ============= BILLING TYPES =============
 
 export interface BillItem {
@@ -342,6 +344,7 @@ export interface Bill {
   subtotal: number;
   discount: number;
   total_amount: number;
+  qr_code?: string | null; // Add QR code field
   notes?: string;
   created_by: string | User;
   created_at: Date;
@@ -363,6 +366,7 @@ export interface CreateBillData {
   items: BillItem[];
   discount?: number;
   notes?: string;
+  qr_code?: File | null; // Add QR code file for upload
 }
 
 export interface UpdateBillData {
@@ -377,6 +381,7 @@ export interface UpdateBillData {
   items?: BillItem[];
   discount?: number;
   notes?: string;
+  qr_code?: File | null; // Add QR code file for upload
 }
 
 // ============= PAYMENT TYPES =============

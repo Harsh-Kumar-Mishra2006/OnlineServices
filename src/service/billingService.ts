@@ -49,10 +49,32 @@ class BillingService {
 
   // ============= ADMIN METHODS =============
 
-  // Create bill (Manual Entry)
+  // Create bill (Manual Entry) - with FormData for file upload
   async createBill(data: CreateBillData): Promise<any> {
     try {
-      const response = await apiService.post('/bills/admin/create', data);
+      const formData = new FormData();
+      
+      // Add all text fields
+      Object.keys(data).forEach(key => {
+        if (key === 'qr_code' && data.qr_code) {
+          // Handle file separately
+          formData.append('qr_code', data.qr_code);
+        } else if (key === 'items') {
+          // Convert items to JSON string
+          formData.append('items', JSON.stringify(data.items));
+        } else if (key === 'customer_address' && data.customer_address) {
+          // Convert address to JSON string
+          formData.append('customer_address', JSON.stringify(data.customer_address));
+        } else if (data[key as keyof CreateBillData] !== undefined && data[key as keyof CreateBillData] !== null) {
+          formData.append(key, String(data[key as keyof CreateBillData]));
+        }
+      });
+
+      const response = await apiService.post('/bills/admin/create', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error: any) {
       return {
@@ -93,10 +115,32 @@ class BillingService {
     }
   }
 
-  // Update bill (admin)
+  // Update bill (admin) - with FormData for file upload
   async updateBill(id: string, data: UpdateBillData): Promise<any> {
     try {
-      const response = await apiService.put(`/bills/admin/${id}`, data);
+      const formData = new FormData();
+      
+      // Add all text fields
+      Object.keys(data).forEach(key => {
+        if (key === 'qr_code' && data.qr_code) {
+          // Handle file separately
+          formData.append('qr_code', data.qr_code);
+        } else if (key === 'items' && data.items) {
+          // Convert items to JSON string
+          formData.append('items', JSON.stringify(data.items));
+        } else if (key === 'customer_address' && data.customer_address) {
+          // Convert address to JSON string
+          formData.append('customer_address', JSON.stringify(data.customer_address));
+        } else if (data[key as keyof UpdateBillData] !== undefined && data[key as keyof UpdateBillData] !== null) {
+          formData.append(key, String(data[key as keyof UpdateBillData]));
+        }
+      });
+
+      const response = await apiService.put(`/bills/admin/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error: any) {
       return {

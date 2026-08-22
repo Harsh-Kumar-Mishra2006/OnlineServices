@@ -9,6 +9,7 @@ const AdminCreateBill: React.FC = () => {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [qrCodePreview, setQrCodePreview] = useState<string | null>(null);
 
   const [billData, setBillData] = useState({
     customer_name: "",
@@ -27,6 +28,7 @@ const AdminCreateBill: React.FC = () => {
     items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
     discount: 0,
     notes: "",
+    qr_code: null as File | null,
   });
 
   const addItem = () => {
@@ -57,6 +59,22 @@ const AdminCreateBill: React.FC = () => {
       }
       return { ...prev, items: newItems };
     });
+  };
+
+  const handleQRCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setBillData({ ...billData, qr_code: file });
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setQrCodePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setBillData({ ...billData, qr_code: null });
+      setQrCodePreview(null);
+    }
   };
 
   const calculateTotals = () => {
@@ -113,6 +131,7 @@ const AdminCreateBill: React.FC = () => {
         items: billData.items,
         discount: billData.discount,
         notes: billData.notes,
+        qr_code: billData.qr_code,
       });
 
       if (response.success) {
@@ -146,7 +165,11 @@ const AdminCreateBill: React.FC = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+          encType="multipart/form-data"
+        >
           {/* Customer Information */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -361,6 +384,50 @@ const AdminCreateBill: React.FC = () => {
                   required
                 />
               </div>
+            </div>
+          </div>
+
+          {/* QR Code Upload */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              QR Code (Optional)
+            </h2>
+            <div className="flex items-center gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Upload QR Code Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleQRCodeChange}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supported formats: JPG, PNG, GIF, WEBP (Max 5MB)
+                </p>
+              </div>
+              {qrCodePreview && (
+                <div className="flex-shrink-0">
+                  <div className="w-24 h-24 border-2 border-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={qrCodePreview}
+                      alt="QR Code Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBillData({ ...billData, qr_code: null });
+                      setQrCodePreview(null);
+                    }}
+                    className="mt-1 text-xs text-red-600 hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
