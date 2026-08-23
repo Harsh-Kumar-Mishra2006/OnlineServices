@@ -217,7 +217,7 @@ const AdminCreateBill: React.FC = () => {
                     setBillData({ ...billData, customer_phone: e.target.value })
                   }
                   className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                  placeholder="+1 234 567 890"
+                  placeholder="+91 234 567 890"
                   required
                 />
               </div>
@@ -438,9 +438,9 @@ const AdminCreateBill: React.FC = () => {
             </h2>
 
             <div className="grid grid-cols-12 gap-3 mb-2 text-sm font-medium text-gray-500">
-              <div className="col-span-6">Description</div>
-              <div className="col-span-2 text-center">Qty</div>
-              <div className="col-span-2 text-center">Rate ($)</div>
+              <div className="col-span-6">Description of Cost</div>
+              <div className="col-span-2 text-center">Qty/Aggregate</div>
+              <div className="col-span-2 text-center">Rate (₹)</div>
               <div className="col-span-1 text-center">Amount</div>
               <div className="col-span-1"></div>
             </div>
@@ -480,9 +480,7 @@ const AdminCreateBill: React.FC = () => {
                 </div>
                 <div className="col-span-2">
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
                     value={item.rate}
                     onChange={(e) =>
                       updateItem(index, "rate", parseFloat(e.target.value) || 0)
@@ -492,7 +490,7 @@ const AdminCreateBill: React.FC = () => {
                   />
                 </div>
                 <div className="col-span-1 text-center font-medium text-gray-700">
-                  ${item.amount.toFixed(2)}
+                  ₹{item.amount.toFixed(2)}
                 </div>
                 <div className="col-span-1 text-center">
                   {billData.items.length > 1 && (
@@ -522,12 +520,10 @@ const AdminCreateBill: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Discount ($)
+                  Discount (₹)
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                  type="any"
                   value={billData.discount}
                   onChange={(e) =>
                     setBillData({
@@ -555,18 +551,18 @@ const AdminCreateBill: React.FC = () => {
               <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount:</span>
                   <span className="font-medium text-red-600">
-                    -${discount.toFixed(2)}
+                    -₹{discount.toFixed(2)}
                   </span>
                 </div>
                 <div className="border-t pt-2 flex justify-between">
                   <span className="text-lg font-semibold">Total:</span>
                   <span className="text-xl font-bold text-green-600">
-                    ${total.toFixed(2)}
+                    ₹{total.toFixed(2)}
                   </span>
                 </div>
               </div>
