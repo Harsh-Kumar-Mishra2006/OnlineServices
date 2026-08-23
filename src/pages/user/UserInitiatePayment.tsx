@@ -1,3 +1,4 @@
+// pages/user/UserInitiatePayment.tsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import paymentService from "../../service/paymentService";
@@ -29,7 +30,8 @@ const UserInitiatePayment: React.FC = () => {
     if (!billId) return;
     setLoading(true);
     try {
-      const response = await billingService.getBillById(billId);
+      // Use getUserBillById for user access
+      const response = await billingService.getUserBillById(billId);
       if (response.success) {
         setBill(response.data);
       } else {
@@ -140,21 +142,36 @@ const UserInitiatePayment: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* QR Code Section - Add your QR code image here */}
+            {/* QR Code Section - Using bill's QR code if available */}
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <h3 className="text-sm font-medium text-gray-700 mb-4">
                 Scan QR Code to Pay
               </h3>
               <div className="flex justify-center">
-                <img
-                  src="/payment-qr-code.jpg" // Replace with your QR code image path
-                  alt="Payment QR Code"
-                  className="w-48 h-48 object-contain border rounded-lg"
-                />
+                {bill?.qr_code ? (
+                  <img
+                    src={bill.qr_code}
+                    alt="Payment QR Code"
+                    className="w-48 h-48 object-contain border rounded-lg"
+                  />
+                ) : (
+                  <div className="w-48 h-48 border-2 border-gray-200 rounded-lg flex items-center justify-center bg-gray-50">
+                    <p className="text-sm text-gray-400">
+                      No QR Code Available
+                    </p>
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-gray-500 mt-4">
-                Scan this QR code using your payment app and make the payment
-              </p>
+              {bill?.qr_code ? (
+                <p className="text-sm text-gray-500 mt-4">
+                  Scan this QR code using your payment app and make the payment
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-4">
+                  No QR code has been uploaded for this bill. Please contact
+                  support.
+                </p>
+              )}
             </div>
 
             {/* Upload Screenshot */}
@@ -233,11 +250,18 @@ const UserInitiatePayment: React.FC = () => {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !bill?.qr_code}
               className="w-full bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Submitting..." : "Submit Payment"}
             </button>
+
+            {!bill?.qr_code && (
+              <p className="text-sm text-amber-600 text-center">
+                ⚠️ Payment cannot be initiated because no QR code is available
+                for this bill.
+              </p>
+            )}
           </form>
         </div>
       </div>
