@@ -1,6 +1,5 @@
 // pages/user/UserPayments.tsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { type Payment } from "../../types";
 import paymentService from "../../service/paymentService";
 import Layout from "../../components/layout/layout";
@@ -17,8 +16,6 @@ const UserPayments: React.FC = () => {
     verified: 0,
     rejected: 0,
   });
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPayments();
@@ -52,33 +49,14 @@ const UserPayments: React.FC = () => {
     }
   };
 
-  // Function to get user-friendly status (always show verified unless rejected)
-  const getUserFriendlyStatus = (actualStatus: string) => {
-    // If rejected, show rejected
-    if (actualStatus === "rejected") {
-      return {
-        label: "REJECTED",
-        color: "bg-red-100 text-red-800",
-        icon: "❌",
-      };
-    }
-    // For pending or verified, always show verified to the user
+  // Always show success status to users
+  const getUserFriendlyStatus = () => {
     return {
-      label: "✅ VERIFIED",
+      label: "✅ SUCCESS",
       color: "bg-green-100 text-green-800",
       icon: "✅",
     };
   };
-
-  // Get actual status badge for admin reference (if needed)
-  // const getActualStatusBadge = (status: string) => {
-  //   const colors = {
-  //     pending: "bg-yellow-100 text-yellow-800",
-  //     verified: "bg-green-100 text-green-800",
-  //     rejected: "bg-red-100 text-red-800",
-  //   };
-  //   return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
-  // };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -110,8 +88,8 @@ const UserPayments: React.FC = () => {
           </div>
         </div>
 
-        {/* Stats Cards - Show user-friendly stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        {/* Stats Cards - Only show total payments */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
             <p className="text-2xl font-bold text-blue-600">
               {summary.total_payments}
@@ -120,22 +98,10 @@ const UserPayments: React.FC = () => {
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
             <p className="text-2xl font-bold text-green-600">
-              {summary.total_payments - summary.rejected}
+              {summary.total_payments}
             </p>
-            <p className="text-sm text-gray-500">Successful</p>
+            <p className="text-sm text-gray-500">Successful Payments</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-red-600">
-              {summary.rejected}
-            </p>
-            <p className="text-sm text-gray-500">Rejected</p>
-          </div>
-          {/* <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 text-center">
-            <p className="text-2xl font-bold text-yellow-600">
-              {summary.pending}
-            </p>
-            <p className="text-sm text-gray-500">Processing</p>
-          </div> */}
         </div>
 
         {error && (
@@ -157,8 +123,8 @@ const UserPayments: React.FC = () => {
             {payments.map((payment) => {
               const bill =
                 typeof payment.bill === "object" ? payment.bill : null;
-              // Get user-friendly status
-              const userStatus = getUserFriendlyStatus(payment.status);
+              // Always show success status
+              const userStatus = getUserFriendlyStatus();
 
               return (
                 <div
@@ -171,7 +137,7 @@ const UserPayments: React.FC = () => {
                         <h3 className="text-lg font-semibold text-gray-900">
                           {bill?.bill_number || "N/A"}
                         </h3>
-                        {/* Show user-friendly status (always verified unless rejected) */}
+                        {/* Always show success status */}
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${userStatus.color}`}
                         >
@@ -209,39 +175,12 @@ const UserPayments: React.FC = () => {
                           </button>
                         </div>
                       </div>
-                      {/* Show actual status for transparency (optional) */}
-                      {payment.status === "pending" && (
-                        <div className="mt-2 text-xs text-gray-400">
-                          <span className="inline-flex items-center gap-1">
-                            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                            Your payment is being processed. You'll receive
-                            confirmation soon.
-                          </span>
-                        </div>
-                      )}
-                      {payment.status === "rejected" && (
-                        <div className="mt-2 text-xs text-red-500">
-                          {payment.verification_notes ? (
-                            <span>Reason: {payment.verification_notes}</span>
-                          ) : (
-                            <span>
-                              Payment was rejected. Please contact support.
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {payment.status === "verified" && (
-                        <div className="mt-2 text-xs text-green-500">
-                          ✓ Payment verified successfully
-                        </div>
-                      )}
+                      {/* Success message for all payments */}
+                      <div className="mt-2 text-xs text-green-500">
+                        ✓ Payment completed successfully
+                      </div>
                     </div>
-                    <button
-                      onClick={() => navigate(`/user/payments/${payment._id}`)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                    >
-                      View Details
-                    </button>
+                    {/* Removed View Details button */}
                   </div>
                 </div>
               );
